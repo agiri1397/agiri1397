@@ -16,5 +16,17 @@
         <a class="dismiss">🗙</a>
     </div>
     <script src="_framework/blazor.webview.js" autostart="false"></script>
+    <script>
+        window.HoneywellApp = {
+            setTheme: function (mode) {
+                document.documentElement.setAttribute('data-theme', mode);
+            }
+        };
+        // Aplica el tema guardado antes de que Blazor cargue (evita flash)
+        (function () {
+            const saved = localStorage.getItem('dark_mode');
+            if (saved === '1') document.documentElement.setAttribute('data-theme', 'dark');
+        })();
+    </script>
 </body>
 </html>

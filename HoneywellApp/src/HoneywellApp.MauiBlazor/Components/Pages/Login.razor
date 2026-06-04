@@ -1,12 +1,14 @@
 @page "/login"
 @inject IAuthService AuthService
 @inject NavigationManager Nav
+@inject ThemeService Theme
 
 <PageTitle>Iniciar Sesión</PageTitle>
 
 <div class="login-container">
     <div class="login-card">
         <div class="login-header">
+            <div class="hw-logo">H</div>
             <h2>HoneywellApp</h2>
             <p>Ingresa tus credenciales</p>
         </div>
@@ -49,6 +51,11 @@
                 }
             </button>
         </EditForm>
+
+        <label class="theme-toggle">
+            <input type="checkbox" checked="@Theme.IsDark" @onchange="ToggleTheme" />
+            @(Theme.IsDark ? "🌙 Modo oscuro" : "☀️ Modo claro")
+        </label>
     </div>
 </div>
 
@@ -60,6 +67,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await Theme.InitAsync();
         if (await AuthService.IsAuthenticatedAsync())
             Nav.NavigateTo("/products");
     }
@@ -86,5 +94,10 @@
         {
             _isLoading = false;
         }
+    }
+
+    private async Task ToggleTheme()
+    {
+        await Theme.ToggleAsync();
     }
 }

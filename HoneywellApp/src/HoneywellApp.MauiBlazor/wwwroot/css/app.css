@@ -4,7 +4,7 @@
 
 /* ── Root variables ─────────────────────────────────────── */
 :root {
-    --hw-primary: #e31837;        /* Honeywell red */
+    --hw-primary: #e31837;
     --hw-primary-dark: #b5122b;
     --hw-secondary: #1a1a2e;
     --hw-accent: #0f3460;
@@ -12,6 +12,32 @@
     --hw-warning: #ffc107;
     --hw-sidebar-width: 220px;
     --hw-toprow-height: 3.5rem;
+
+    /* Light mode tokens */
+    --hw-bg: #f5f5f5;
+    --hw-surface: #ffffff;
+    --hw-text: #212529;
+    --hw-text-muted: #6c757d;
+    --hw-border: #dee2e6;
+    --hw-input-bg: #ffffff;
+    --hw-input-text: #212529;
+    --hw-card-shadow: 0 20px 60px rgba(0,0,0,0.12);
+    --hw-row-hover: rgba(227,24,55,0.04);
+}
+
+/* ── Dark mode tokens ───────────────────────────────────── */
+[data-theme="dark"] {
+    --hw-bg: #0d0d0d;
+    --hw-surface: #1a1a2e;
+    --hw-text: #e9ecef;
+    --hw-text-muted: #adb5bd;
+    --hw-border: #2c2c4a;
+    --hw-input-bg: #12122a;
+    --hw-input-text: #e9ecef;
+    --hw-card-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    --hw-row-hover: rgba(227,24,55,0.08);
+    --hw-accent: #162447;
+    --hw-secondary: #0d0d1a;
 }
 
 /* ── Global reset ───────────────────────────────────────── */
@@ -25,7 +51,9 @@ html, body {
     padding: 0;
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     font-size: 14px;
-    background-color: #f5f5f5;
+    background-color: var(--hw-bg);
+    color: var(--hw-text);
+    transition: background-color 0.25s, color 0.25s;
 }
 
 /* ── Page layout ────────────────────────────────────────── */
@@ -117,12 +145,13 @@ main {
 }
 
 .login-card {
-    background: #fff;
+    background: var(--hw-surface);
     border-radius: 12px;
     padding: 2.5rem 2rem;
     width: 100%;
     max-width: 420px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--hw-card-shadow);
+    transition: background-color 0.25s;
 }
 
 .login-header {
@@ -137,8 +166,84 @@ main {
 }
 
 .login-header p {
-    color: #6c757d;
+    color: var(--hw-text-muted);
     font-size: 0.9rem;
+}
+
+/* ── Dark mode toggle ───────────────────────────────────── */
+.theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--hw-text-muted);
+    user-select: none;
+    margin-top: 1.25rem;
+    justify-content: center;
+}
+
+.theme-toggle input[type="checkbox"] {
+    appearance: none;
+    width: 2.4rem;
+    height: 1.3rem;
+    background: var(--hw-border);
+    border-radius: 999px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.theme-toggle input[type="checkbox"]:checked {
+    background: var(--hw-primary);
+}
+
+.theme-toggle input[type="checkbox"]::after {
+    content: '';
+    position: absolute;
+    top: 0.15rem;
+    left: 0.15rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s;
+}
+
+.theme-toggle input[type="checkbox"]:checked::after {
+    transform: translateX(1.1rem);
+}
+
+/* ── Form inputs dark mode ──────────────────────────────── */
+.form-control {
+    background-color: var(--hw-input-bg);
+    color: var(--hw-input-text);
+    border-color: var(--hw-border);
+    transition: background-color 0.25s, color 0.25s, border-color 0.25s;
+}
+
+.form-control:focus {
+    background-color: var(--hw-input-bg);
+    color: var(--hw-input-text);
+    border-color: var(--hw-primary);
+    box-shadow: 0 0 0 0.2rem rgba(227,24,55,0.2);
+}
+
+/* ── Table dark mode ────────────────────────────────────── */
+.table {
+    color: var(--hw-text);
+    border-color: var(--hw-border);
+}
+
+.table > :not(caption) > * {
+    border-color: var(--hw-border);
+    background-color: transparent;
+}
+
+.table-hover tbody tr:hover {
+    background-color: var(--hw-row-hover);
+    color: var(--hw-text);
 }
 
 .hw-logo {

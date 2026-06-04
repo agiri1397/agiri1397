@@ -1,8 +1,9 @@
 using CommunityToolkit.Maui;
 using HoneywellApp.Application.Interfaces;
-using HoneywellApp.Application.Services;   // IApiAuthClient, IApiProductClient, AuthService, ProductService
+using HoneywellApp.Application.Services;
 using HoneywellApp.Domain.Interfaces;
 using HoneywellApp.Infrastructure.Services;
+using HoneywellApp.MauiBlazor.Services;
 using HoneywellApp.Persistence;
 using HoneywellApp.Persistence.Data;
 using Microsoft.Extensions.Logging;
@@ -58,6 +59,9 @@ public static class MauiProgram
         // Application
         builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<IProductService, ProductService>();
+
+        // UI Services
+        builder.Services.AddScoped<ThemeService>();
 
         var app = builder.Build();
 

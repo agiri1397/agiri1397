@@ -1,6 +1,7 @@
 @inherits LayoutComponentBase
 @inject IAuthService AuthService
 @inject NavigationManager Nav
+@inject ThemeService Theme
 
 <div class="page">
     @if (_isAuthenticated)
@@ -10,7 +11,11 @@
         </div>
         <main>
             <div class="top-row px-4">
-                <span class="me-3 text-white small">@_userEmail</span>
+                <span class="me-auto text-white small">@_userEmail</span>
+                <label class="theme-toggle me-3" style="margin-top:0; color:rgba(255,255,255,0.8);">
+                    <input type="checkbox" checked="@Theme.IsDark" @onchange="ToggleTheme" />
+                    @(Theme.IsDark ? "🌙" : "☀️")
+                </label>
                 <button class="btn btn-sm btn-outline-light" @onclick="Logout">Salir</button>
             </div>
             <article class="content px-4">
@@ -30,12 +35,19 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await Theme.InitAsync();
         _isAuthenticated = await AuthService.IsAuthenticatedAsync();
         if (_isAuthenticated)
             _userEmail = await AuthService.GetCurrentUserEmailAsync();
 
         if (!_isAuthenticated && Nav.Uri != Nav.BaseUri + "login")
             Nav.NavigateTo("/login");
+    }
+
+    private async Task ToggleTheme()
+    {
+        await Theme.ToggleAsync();
+        StateHasChanged();
     }
 
     private async Task Logout()
