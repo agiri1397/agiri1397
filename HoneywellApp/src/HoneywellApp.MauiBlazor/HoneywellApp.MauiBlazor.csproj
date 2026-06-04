@@ -53,6 +53,7 @@
   <ItemGroup>
     <ProjectReference Include="..\HoneywellApp.Application\HoneywellApp.Application.csproj" />
     <ProjectReference Include="..\HoneywellApp.Infrastructure\HoneywellApp.Infrastructure.csproj" />
+    <ProjectReference Include="..\HoneywellApp.Persistence\HoneywellApp.Persistence.csproj" />
   </ItemGroup>
 
   <!-- MAUI Assets -->
