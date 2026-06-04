@@ -2,10 +2,9 @@ using CommunityToolkit.Maui;
 using HoneywellApp.Application.Interfaces;
 using HoneywellApp.Application.Services;   // IApiAuthClient, IApiProductClient, AuthService, ProductService
 using HoneywellApp.Domain.Interfaces;
-using HoneywellApp.Infrastructure.Data;
-using HoneywellApp.Infrastructure.Repositories;
 using HoneywellApp.Infrastructure.Services;
-using Microsoft.EntityFrameworkCore;
+using HoneywellApp.Persistence;
+using HoneywellApp.Persistence.Data;
 using Microsoft.Extensions.Logging;
 
 namespace HoneywellApp.MauiBlazor;
@@ -36,8 +35,7 @@ public static class MauiProgram
         // Database
         var dbPath = AppDbContext.GetDbPath();
         Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
-        builder.Services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlite($"Data Source={dbPath}"), ServiceLifetime.Singleton);
+        builder.Services.AddPersistence(dbPath);
 
         // HTTP Clients
         builder.Services.AddHttpClient<ApiAuthClient>(client =>
@@ -54,8 +52,6 @@ public static class MauiProgram
         // Infrastructure
         builder.Services.AddSingleton<ISyncService, SyncService>();
         builder.Services.AddSingleton<IBluetoothPrinterService, BluetoothPrinterService>();
-        builder.Services.AddScoped<IUserRepository, UserRepository>();
-        builder.Services.AddScoped<IProductRepository, ProductRepository>();
         builder.Services.AddScoped<IApiAuthClient, ApiAuthClient>();
         builder.Services.AddScoped<IApiProductClient, ApiProductClient>();
 
