@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xaml-comp compile="true" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- Honeywell Brand Colors -->
+    <Color x:Key="Primary">#E31837</Color>
+    <Color x:Key="PrimaryDark">#B5122B</Color>
+    <Color x:Key="PrimaryDarkText">#FFFFFF</Color>
+    <Color x:Key="Secondary">#1A1A2E</Color>
+    <Color x:Key="SecondaryDarkText">#FFFFFF</Color>
+    <Color x:Key="Tertiary">#0F3460</Color>
+
+    <Color x:Key="White">#FFFFFF</Color>
+    <Color x:Key="Black">#000000</Color>
+    <Color x:Key="Midgray">#6C757D</Color>
+    <Color x:Key="LightGray">#F5F5F5</Color>
+
+    <Color x:Key="Success">#198754</Color>
+    <Color x:Key="Warning">#FFC107</Color>
+    <Color x:Key="Danger">#DC3545</Color>
+    <Color x:Key="Info">#0DCAF0</Color>
+
+    <Color x:Key="PageBackgroundColor">#F5F5F5</Color>
+    <Color x:Key="CardBackgroundColor">#FFFFFF</Color>
+
+</ResourceDictionary>
