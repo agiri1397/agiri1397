@@ -1,0 +1,46 @@
+@inherits LayoutComponentBase
+@inject IAuthService AuthService
+@inject NavigationManager Nav
+
+<div class="page">
+    @if (_isAuthenticated)
+    {
+        <div class="sidebar">
+            <NavMenu />
+        </div>
+        <main>
+            <div class="top-row px-4">
+                <span class="me-3 text-white small">@_userEmail</span>
+                <button class="btn btn-sm btn-outline-light" @onclick="Logout">Salir</button>
+            </div>
+            <article class="content px-4">
+                @Body
+            </article>
+        </main>
+    }
+    else
+    {
+        @Body
+    }
+</div>
+
+@code {
+    private bool _isAuthenticated;
+    private string? _userEmail;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isAuthenticated = await AuthService.IsAuthenticatedAsync();
+        if (_isAuthenticated)
+            _userEmail = await AuthService.GetCurrentUserEmailAsync();
+
+        if (!_isAuthenticated && Nav.Uri != Nav.BaseUri + "login")
+            Nav.NavigateTo("/login");
+    }
+
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+        Nav.NavigateTo("/login", forceLoad: true);
+    }
+}

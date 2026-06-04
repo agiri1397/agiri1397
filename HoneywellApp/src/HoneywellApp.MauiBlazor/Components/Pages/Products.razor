@@ -1,0 +1,131 @@
+@page "/products"
+@page "/"
+@inject IProductService ProductService
+@inject IBluetoothPrinterService BluetoothService
+@inject ISyncService SyncService
+
+<PageTitle>Productos</PageTitle>
+
+<div class="page-header d-flex justify-content-between align-items-center mb-3">
+    <h3>Productos</h3>
+    <div>
+        <span class="badge @(_isOnline ? "bg-success" : "bg-secondary") me-2">
+            @(_isOnline ? "Online" : "Offline")
+        </span>
+        <button class="btn btn-sm btn-outline-primary" @onclick="LoadProducts" disabled="@_isLoading">
+            Actualizar
+        </button>
+    </div>
+</div>
+
+@if (_isFromCache)
+{
+    <div class="alert alert-info small">Mostrando datos del caché local (sin conexión al API).</div>
+}
+
+@if (_isLoading)
+{
+    <div class="text-center py-4">
+        <div class="spinner-border text-primary"></div>
+        <p class="mt-2">Cargando productos...</p>
+    </div>
+}
+else if (_products.Any())
+{
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Nombre</th>
+                    <th>SKU</th>
+                    <th>Categoría</th>
+                    <th>Precio</th>
+                    <th>Stock</th>
+                    <th>Sync</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var product in _products)
+                {
+                    <tr>
+                        <td>@product.Name</td>
+                        <td><code>@product.SKU</code></td>
+                        <td>@product.Category</td>
+                        <td>$@product.Price.ToString("F2")</td>
+                        <td>@product.StockQuantity</td>
+                        <td>
+                            <span class="badge @(product.IsSynced ? "bg-success" : "bg-warning")">
+                                @(product.IsSynced ? "Sync" : "Pendiente")
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-secondary"
+                                    @onclick="() => PrintLabel(product)"
+                                    disabled="@(!BluetoothService.IsConnected)">
+                                Imprimir
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="text-center text-muted py-5">
+        <p>No hay productos disponibles.</p>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(_statusMessage))
+{
+    <div class="alert alert-info mt-3">@_statusMessage</div>
+}
+
+@code {
+    private List<ProductDto> _products = [];
+    private bool _isLoading = true;
+    private bool _isFromCache;
+    private bool _isOnline;
+    private string? _statusMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        SyncService.ConnectivityChanged += OnConnectivityChanged;
+        _isOnline = SyncService.IsOnline;
+        await LoadProducts();
+    }
+
+    private async Task LoadProducts()
+    {
+        _isLoading = true;
+        _statusMessage = null;
+        StateHasChanged();
+
+        var result = await ProductService.GetAllProductsAsync();
+        _products = result.Products.ToList();
+        _isFromCache = result.IsFromCache;
+        _isOnline = SyncService.IsOnline;
+        _isLoading = false;
+    }
+
+    private async Task PrintLabel(ProductDto product)
+    {
+        var success = await BluetoothService.PrintProductLabelAsync(
+            product.Name, product.SKU, product.Barcode, product.Price);
+        _statusMessage = success
+            ? $"Etiqueta de '{product.Name}' enviada a la impresora."
+            : "Error al imprimir. Verifique la conexión Bluetooth.";
+    }
+
+    private void OnConnectivityChanged(object? sender, bool isOnline)
+    {
+        _isOnline = isOnline;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() =>
+        SyncService.ConnectivityChanged -= OnConnectivityChanged;
+}

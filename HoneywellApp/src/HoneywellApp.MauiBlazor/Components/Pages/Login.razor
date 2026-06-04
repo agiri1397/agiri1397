@@ -1,0 +1,90 @@
+@page "/login"
+@inject IAuthService AuthService
+@inject NavigationManager Nav
+
+<PageTitle>Iniciar Sesión</PageTitle>
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <h2>HoneywellApp</h2>
+            <p>Ingresa tus credenciales</p>
+        </div>
+
+        <EditForm Model="@_model" OnValidSubmit="HandleLogin">
+            <DataAnnotationsValidator />
+
+            <div class="form-group">
+                <label>Correo electrónico</label>
+                <InputText class="form-control" @bind-Value="_model.Email" placeholder="usuario@ejemplo.com" />
+                <ValidationMessage For="@(() => _model.Email)" />
+            </div>
+
+            <div class="form-group mt-3">
+                <label>Contraseña</label>
+                <InputText class="form-control" type="password" @bind-Value="_model.Password" placeholder="••••••••" />
+                <ValidationMessage For="@(() => _model.Password)" />
+            </div>
+
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="alert alert-danger mt-3">@_errorMessage</div>
+            }
+
+            @if (_isOfflineMode)
+            {
+                <div class="alert alert-warning mt-2 small">
+                    Sin conexión — usando credenciales guardadas localmente.
+                </div>
+            }
+
+            <button type="submit" class="btn btn-primary w-100 mt-4" disabled="@_isLoading">
+                @if (_isLoading)
+                {
+                    <span>Verificando...</span>
+                }
+                else
+                {
+                    <span>Iniciar Sesión</span>
+                }
+            </button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private readonly LoginRequest _model = new();
+    private string? _errorMessage;
+    private bool _isLoading;
+    private bool _isOfflineMode;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (await AuthService.IsAuthenticatedAsync())
+            Nav.NavigateTo("/products");
+    }
+
+    private async Task HandleLogin()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            var result = await AuthService.LoginAsync(_model);
+            if (result.Success)
+            {
+                _isOfflineMode = result.IsOfflineLogin;
+                Nav.NavigateTo("/products");
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage;
+            }
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}
