@@ -6,9 +6,9 @@
 
 <PageTitle>Productos</PageTitle>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-3">
     <MudText Typo="Typo.h5">Productos</MudText>
-    <div class="d-flex align-items-center gap-2">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
         <MudChip Color="@(_isOnline ? Color.Success : Color.Default)" Size="Size.Small">
             @(_isOnline ? "Online" : "Offline")
         </MudChip>
@@ -16,8 +16,8 @@
                    OnClick="LoadProducts" Disabled="@_isLoading">
             Actualizar
         </MudButton>
-    </div>
-</div>
+    </MudStack>
+</MudStack>
 
 @if (_isFromCache)
 {
@@ -26,10 +26,10 @@
 
 @if (_isLoading)
 {
-    <div class="d-flex flex-column align-items-center py-4">
+    <MudStack AlignItems="AlignItems.Center" Class="py-4">
         <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
         <MudText Class="mt-2">Cargando productos...</MudText>
-    </div>
+    </MudStack>
 }
 else if (_products.Any())
 {
@@ -66,9 +66,9 @@ else if (_products.Any())
 }
 else
 {
-    <div class="d-flex justify-content-center py-5">
+    <MudStack AlignItems="AlignItems.Center" Class="py-5">
         <MudText Color="Color.Secondary">No hay productos disponibles.</MudText>
-    </div>
+    </MudStack>
 }
 
 @if (!string.IsNullOrEmpty(_statusMessage))

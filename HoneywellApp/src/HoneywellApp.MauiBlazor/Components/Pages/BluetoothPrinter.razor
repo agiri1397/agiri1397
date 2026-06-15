@@ -4,101 +4,100 @@
 
 <PageTitle>Impresora Bluetooth</PageTitle>
 
-<h3>Impresora Honeywell Bluetooth</h3>
+<MudText Typo="Typo.h5" Class="mb-4">Impresora Honeywell Bluetooth</MudText>
 
-<div class="card mb-3">
-    <div class="card-body">
-        <h5 class="card-title">Estado de conexión</h5>
+<MudCard Class="mb-3">
+    <MudCardContent>
+        <MudText Typo="Typo.h6" Class="mb-2">Estado de conexión</MudText>
         @if (BluetoothService.IsConnected)
         {
-            <div class="d-flex align-items-center">
-                <span class="badge bg-success me-2">Conectado</span>
-                <strong>@BluetoothService.ConnectedDeviceName</strong>
-                <button class="btn btn-sm btn-outline-danger ms-auto" @onclick="Disconnect">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudChip Color="Color.Success" Size="Size.Small">Conectado</MudChip>
+                <MudText><b>@BluetoothService.ConnectedDeviceName</b></MudText>
+                <MudSpacer />
+                <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small"
+                           OnClick="Disconnect">
                     Desconectar
-                </button>
-            </div>
+                </MudButton>
+            </MudStack>
         }
         else
         {
-            <span class="badge bg-secondary">Sin conexión</span>
+            <MudChip Color="Color.Default" Size="Size.Small">Sin conexión</MudChip>
         }
-    </div>
-</div>
+    </MudCardContent>
+</MudCard>
 
-<div class="card mb-3">
-    <div class="card-body">
-        <h5 class="card-title">Escanear dispositivos</h5>
-        <button class="btn btn-primary" @onclick="ScanDevices" disabled="@_isScanning">
+<MudCard Class="mb-3">
+    <MudCardContent>
+        <MudText Typo="Typo.h6" Class="mb-2">Escanear dispositivos</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ScanDevices" Disabled="@_isScanning">
             @(_isScanning ? "Escaneando... (10s)" : "Buscar impresoras Honeywell")
-        </button>
+        </MudButton>
 
         @if (_devices.Any())
         {
-            <div class="mt-3">
-                <h6>Dispositivos encontrados:</h6>
-                <div class="list-group">
-                    @foreach (var device in _devices)
-                    {
-                        <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-                                @onclick="() => Connect(device.Id)">
-                            <div>
-                                <strong>@device.Name</strong>
-                                <br />
-                                <small class="text-muted">@device.Id</small>
-                            </div>
-                            <div class="text-end">
-                                <small>RSSI: @device.Rssi dBm</small>
-                                <br />
-                                <span class="badge bg-primary">Conectar</span>
-                            </div>
-                        </button>
-                    }
-                </div>
-            </div>
+            <MudText Typo="Typo.subtitle2" Class="mt-3 mb-1">Dispositivos encontrados:</MudText>
+            <MudList T="BluetoothDevice" Clickable="true">
+                @foreach (var device in _devices)
+                {
+                    <MudListItem T="BluetoothDevice" OnClick="() => Connect(device.Id)">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%">
+                            <MudStack Spacing="0">
+                                <MudText><b>@device.Name</b></MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@device.Id</MudText>
+                            </MudStack>
+                            <MudStack AlignItems="AlignItems.End" Spacing="0">
+                                <MudText Typo="Typo.caption">RSSI: @device.Rssi dBm</MudText>
+                                <MudChip Color="Color.Primary" Size="Size.Small">Conectar</MudChip>
+                            </MudStack>
+                        </MudStack>
+                    </MudListItem>
+                }
+            </MudList>
         }
         else if (!_isScanning)
         {
-            <p class="text-muted mt-2 small">No se han encontrado impresoras. Asegúrese de que el Bluetooth esté activo.</p>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">
+                No se han encontrado impresoras. Asegúrese de que el Bluetooth esté activo.
+            </MudText>
         }
-    </div>
-</div>
+    </MudCardContent>
+</MudCard>
 
 @if (BluetoothService.IsConnected)
 {
-    <div class="card">
-        <div class="card-body">
-            <h5 class="card-title">Prueba de impresión</h5>
-            <div class="row g-2 mb-3">
-                <div class="col-6">
-                    <label>Producto</label>
-                    <input class="form-control" @bind="_testProduct" placeholder="Nombre del producto" />
-                </div>
-                <div class="col-3">
-                    <label>SKU</label>
-                    <input class="form-control" @bind="_testSku" placeholder="SKU-001" />
-                </div>
-                <div class="col-3">
-                    <label>Precio</label>
-                    <input class="form-control" type="number" @bind="_testPrice" />
-                </div>
-            </div>
-            <div class="mb-3">
-                <label>Código de barras</label>
-                <input class="form-control" @bind="_testBarcode" placeholder="123456789012" />
-            </div>
-            <button class="btn btn-success" @onclick="TestPrint">
+    <MudCard>
+        <MudCardContent>
+            <MudText Typo="Typo.h6" Class="mb-3">Prueba de impresión</MudText>
+            <MudGrid Class="mb-3">
+                <MudItem xs="6">
+                    <MudTextField @bind-Value="_testProduct" Label="Producto" Variant="Variant.Outlined"
+                                  Placeholder="Nombre del producto" FullWidth="true" />
+                </MudItem>
+                <MudItem xs="3">
+                    <MudTextField @bind-Value="_testSku" Label="SKU" Variant="Variant.Outlined"
+                                  Placeholder="SKU-001" FullWidth="true" />
+                </MudItem>
+                <MudItem xs="3">
+                    <MudTextField @bind-Value="_testPrice" Label="Precio" Variant="Variant.Outlined"
+                                  InputType="InputType.Number" FullWidth="true" />
+                </MudItem>
+            </MudGrid>
+            <MudTextField @bind-Value="_testBarcode" Label="Código de barras" Variant="Variant.Outlined"
+                          Placeholder="123456789012" FullWidth="true" Class="mb-3" />
+            <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="TestPrint">
                 Imprimir etiqueta de prueba
-            </button>
-        </div>
-    </div>
+            </MudButton>
+        </MudCardContent>
+    </MudCard>
 }
 
 @if (!string.IsNullOrEmpty(_statusMessage))
 {
-    <div class="alert @(_isError ? "alert-danger" : "alert-success") mt-3">
+    <MudAlert Severity="@(_isError ? Severity.Error : Severity.Success)" Class="mt-3">
         @_statusMessage
-    </div>
+    </MudAlert>
 }
 
 @code {
