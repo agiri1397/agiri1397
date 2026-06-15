@@ -1,38 +1,21 @@
-using Microsoft.JSInterop;
-
 namespace HoneywellApp.MauiBlazor.Services;
 
 public class ThemeService
 {
     private const string PrefKey = "dark_mode";
-    private readonly IJSRuntime _js;
-    private bool _isDark;
-
-    public bool IsDark => _isDark;
+    public bool IsDark { get; private set; }
     public event Action? OnChanged;
 
-    public ThemeService(IJSRuntime js)
+    public void Init(string? stored)
     {
-        _js = js;
+        IsDark = stored == "1";
     }
 
-    public async Task InitAsync()
+    public void Toggle()
     {
-        var stored = await _js.InvokeAsync<string?>("localStorage.getItem", PrefKey);
-        _isDark = stored == "1";
-        await ApplyAsync();
-    }
-
-    public async Task ToggleAsync()
-    {
-        _isDark = !_isDark;
-        await _js.InvokeVoidAsync("localStorage.setItem", PrefKey, _isDark ? "1" : "0");
-        await ApplyAsync();
+        IsDark = !IsDark;
         OnChanged?.Invoke();
     }
 
-    private async Task ApplyAsync()
-    {
-        await _js.InvokeVoidAsync("HoneywellApp.setTheme", _isDark ? "dark" : "light");
-    }
+    public string StorageValue => IsDark ? "1" : "0";
 }

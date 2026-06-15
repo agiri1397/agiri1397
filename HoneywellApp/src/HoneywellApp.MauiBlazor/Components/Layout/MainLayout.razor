@@ -2,40 +2,76 @@
 @inject IAuthService AuthService
 @inject NavigationManager Nav
 @inject ThemeService Theme
+@inject IJSRuntime JS
 
-<div class="page">
-    @if (_isAuthenticated)
-    {
-        <div class="sidebar">
+<MudThemeProvider @ref="_themeProvider" Theme="_theme" @bind-IsDarkMode="Theme.IsDark" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+@if (_isAuthenticated)
+{
+    <MudLayout>
+        <MudAppBar Elevation="1" Color="Color.Primary">
+            <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
+            <MudText Typo="Typo.h6" Class="ml-2">HoneywellApp</MudText>
+            <MudSpacer />
+            <MudText Typo="Typo.body2" Class="mr-3">@_userEmail</MudText>
+            <MudTooltip Text="@(Theme.IsDark ? "Modo claro" : "Modo oscuro")">
+                <MudIconButton Icon="@(Theme.IsDark ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                               Color="Color.Inherit" OnClick="ToggleTheme" />
+            </MudTooltip>
+            <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit" OnClick="Logout" />
+        </MudAppBar>
+        <MudDrawer @bind-Open="_drawerOpen" Elevation="2" Variant="@DrawerVariant.Responsive">
+            <MudDrawerHeader>
+                <MudText Typo="Typo.h6">Menú</MudText>
+            </MudDrawerHeader>
             <NavMenu />
-        </div>
-        <main>
-            <div class="top-row px-4">
-                <span class="me-auto text-white small">@_userEmail</span>
-                <label class="theme-toggle me-3" style="margin-top:0; color:rgba(255,255,255,0.8);">
-                    <input type="checkbox" checked="@Theme.IsDark" @onchange="ToggleTheme" />
-                    @(Theme.IsDark ? "🌙" : "☀️")
-                </label>
-                <button class="btn btn-sm btn-outline-light" @onclick="Logout">Salir</button>
-            </div>
-            <article class="content px-4">
+        </MudDrawer>
+        <MudMainContent>
+            <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
                 @Body
-            </article>
-        </main>
-    }
-    else
-    {
-        @Body
-    }
-</div>
+            </MudContainer>
+        </MudMainContent>
+    </MudLayout>
+}
+else
+{
+    @Body
+}
 
 @code {
     private bool _isAuthenticated;
     private string? _userEmail;
+    private bool _drawerOpen = true;
+    private MudThemeProvider _themeProvider = null!;
+
+    private MudTheme _theme = new MudTheme
+    {
+        PaletteLight = new PaletteLight
+        {
+            Primary = "#E31837",
+            PrimaryDarken = "#B5122B",
+            Secondary = "#1A1A2E",
+            AppbarBackground = "#E31837",
+        },
+        PaletteDark = new PaletteDark
+        {
+            Primary = "#E31837",
+            PrimaryDarken = "#B5122B",
+            Secondary = "#1A1A2E",
+            AppbarBackground = "#1A1A2E",
+            Surface = "#1E1E2E",
+            Background = "#0D0D0D",
+        }
+    };
 
     protected override async Task OnInitializedAsync()
     {
-        await Theme.InitAsync();
+        var stored = await JS.InvokeAsync<string?>("localStorage.getItem", "dark_mode");
+        Theme.Init(stored);
+        Theme.OnChanged += StateHasChanged;
+
         _isAuthenticated = await AuthService.IsAuthenticatedAsync();
         if (_isAuthenticated)
             _userEmail = await AuthService.GetCurrentUserEmailAsync();
@@ -46,13 +82,18 @@
 
     private async Task ToggleTheme()
     {
-        await Theme.ToggleAsync();
+        Theme.Toggle();
+        await JS.InvokeVoidAsync("localStorage.setItem", "dark_mode", Theme.StorageValue);
         StateHasChanged();
     }
+
+    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
 
     private async Task Logout()
     {
         await AuthService.LogoutAsync();
         Nav.NavigateTo("/login", forceLoad: true);
     }
+
+    public void Dispose() => Theme.OnChanged -= StateHasChanged;
 }

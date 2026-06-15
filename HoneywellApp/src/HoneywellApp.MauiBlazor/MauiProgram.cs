@@ -1,5 +1,6 @@
 using CommunityToolkit.Maui;
 using HoneywellApp.Application.Interfaces;
+using MudBlazor;
 using HoneywellApp.Application.Services;
 using HoneywellApp.Domain.Interfaces;
 using HoneywellApp.Infrastructure.Services;
@@ -27,6 +28,7 @@ public static class MauiProgram
 
         // Blazor WebView
         builder.Services.AddMauiBlazorWebView();
+        builder.Services.AddMudServices();
 
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();

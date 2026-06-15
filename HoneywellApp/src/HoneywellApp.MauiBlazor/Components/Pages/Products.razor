@@ -6,82 +6,74 @@
 
 <PageTitle>Productos</PageTitle>
 
-<div class="page-header d-flex justify-content-between align-items-center mb-3">
-    <h3>Productos</h3>
-    <div>
-        <span class="badge @(_isOnline ? "bg-success" : "bg-secondary") me-2">
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <MudText Typo="Typo.h5">Productos</MudText>
+    <div class="d-flex align-items-center gap-2">
+        <MudChip Color="@(_isOnline ? Color.Success : Color.Default)" Size="Size.Small">
             @(_isOnline ? "Online" : "Offline")
-        </span>
-        <button class="btn btn-sm btn-outline-primary" @onclick="LoadProducts" disabled="@_isLoading">
+        </MudChip>
+        <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Primary"
+                   OnClick="LoadProducts" Disabled="@_isLoading">
             Actualizar
-        </button>
+        </MudButton>
     </div>
 </div>
 
 @if (_isFromCache)
 {
-    <div class="alert alert-info small">Mostrando datos del caché local (sin conexión al API).</div>
+    <MudAlert Severity="Severity.Info" Class="mb-3">Mostrando datos del caché local (sin conexión al API).</MudAlert>
 }
 
 @if (_isLoading)
 {
-    <div class="text-center py-4">
-        <div class="spinner-border text-primary"></div>
-        <p class="mt-2">Cargando productos...</p>
+    <div class="d-flex flex-column align-items-center py-4">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        <MudText Class="mt-2">Cargando productos...</MudText>
     </div>
 }
 else if (_products.Any())
 {
-    <div class="table-responsive">
-        <table class="table table-hover">
-            <thead class="table-dark">
-                <tr>
-                    <th>Nombre</th>
-                    <th>SKU</th>
-                    <th>Categoría</th>
-                    <th>Precio</th>
-                    <th>Stock</th>
-                    <th>Sync</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var product in _products)
-                {
-                    <tr>
-                        <td>@product.Name</td>
-                        <td><code>@product.SKU</code></td>
-                        <td>@product.Category</td>
-                        <td>$@product.Price.ToString("F2")</td>
-                        <td>@product.StockQuantity</td>
-                        <td>
-                            <span class="badge @(product.IsSynced ? "bg-success" : "bg-warning")">
-                                @(product.IsSynced ? "Sync" : "Pendiente")
-                            </span>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-secondary"
-                                    @onclick="() => PrintLabel(product)"
-                                    disabled="@(!BluetoothService.IsConnected)">
-                                Imprimir
-                            </button>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+    <MudTable Items="_products" Hover="true" Striped="true" T="ProductDto">
+        <HeaderContent>
+            <MudTh>Nombre</MudTh>
+            <MudTh>SKU</MudTh>
+            <MudTh>Categoría</MudTh>
+            <MudTh>Precio</MudTh>
+            <MudTh>Stock</MudTh>
+            <MudTh>Sync</MudTh>
+            <MudTh>Acciones</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Nombre">@context.Name</MudTd>
+            <MudTd DataLabel="SKU"><code>@context.SKU</code></MudTd>
+            <MudTd DataLabel="Categoría">@context.Category</MudTd>
+            <MudTd DataLabel="Precio">$@context.Price.ToString("F2")</MudTd>
+            <MudTd DataLabel="Stock">@context.StockQuantity</MudTd>
+            <MudTd DataLabel="Sync">
+                <MudChip Color="@(context.IsSynced ? Color.Success : Color.Warning)" Size="Size.Small">
+                    @(context.IsSynced ? "Sync" : "Pendiente")
+                </MudChip>
+            </MudTd>
+            <MudTd DataLabel="Acciones">
+                <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Secondary"
+                           OnClick="() => PrintLabel(context)"
+                           Disabled="@(!BluetoothService.IsConnected)">
+                    Imprimir
+                </MudButton>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
 }
 else
 {
-    <div class="text-center text-muted py-5">
-        <p>No hay productos disponibles.</p>
+    <div class="d-flex justify-content-center py-5">
+        <MudText Color="Color.Secondary">No hay productos disponibles.</MudText>
     </div>
 }
 
 @if (!string.IsNullOrEmpty(_statusMessage))
 {
-    <div class="alert alert-info mt-3">@_statusMessage</div>
+    <MudAlert Severity="Severity.Info" Class="mt-3">@_statusMessage</MudAlert>
 }
 
 @code {
