@@ -1,0 +1,99 @@
+@page "/login"
+@attribute [AllowAnonymous]
+@layout Layout.LoginLayout
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h5" Class="mb-1">Iniciar sesión</MudText>
+<MudText Typo="Typo.body2" Class="mb-6" Color="Color.Secondary">
+    Cuenta demo: <b>demo</b> / <b>Demo123!</b>
+</MudText>
+
+<MudForm @ref="_form" Model="_model" @bind-IsValid="_isValid">
+    <MudTextField T="string"
+                  Label="Usuario o correo"
+                  @bind-Value="_model.UserNameOrEmail"
+                  Required="true"
+                  RequiredError="Este campo es obligatorio"
+                  Immediate="true"
+                  Class="mb-3" />
+
+    <MudTextField T="string"
+                  Label="Contraseña"
+                  @bind-Value="_model.Password"
+                  InputType="@_passwordInput"
+                  Adornment="Adornment.End"
+                  AdornmentIcon="@_passwordAdornmentIcon"
+                  OnAdornmentClick="TogglePasswordVisibility"
+                  Required="true"
+                  RequiredError="Este campo es obligatorio"
+                  Immediate="true"
+                  Class="mb-2" />
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <MudAlert Severity="Severity.Error" Class="mb-3" Dense="true">@_errorMessage</MudAlert>
+    }
+
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               FullWidth="true"
+               Disabled="@(!_isValid || _isBusy)"
+               OnClick="LoginAsync"
+               Class="mt-2">
+        @if (_isBusy)
+        {
+            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+        }
+        Entrar
+    </MudButton>
+
+    <MudButton Variant="Variant.Text" FullWidth="true" Class="mt-2" Href="/register">
+        Crear una cuenta nueva
+    </MudButton>
+</MudForm>
+
+@code {
+    private readonly LoginRequestDto _model = new();
+    private MudForm _form = null!;
+    private bool _isValid;
+    private bool _isBusy;
+    private string? _errorMessage;
+
+    private bool _passwordVisible;
+    private InputType _passwordInput = InputType.Password;
+    private string _passwordAdornmentIcon = Icons.Material.Filled.VisibilityOff;
+
+    private void TogglePasswordVisibility()
+    {
+        _passwordVisible = !_passwordVisible;
+        _passwordInput = _passwordVisible ? InputType.Text : InputType.Password;
+        _passwordAdornmentIcon = _passwordVisible ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff;
+    }
+
+    private async Task LoginAsync()
+    {
+        await _form.Validate();
+        if (!_isValid)
+        {
+            return;
+        }
+
+        _isBusy = true;
+        _errorMessage = null;
+
+        var result = await AuthService.LoginAsync(_model);
+
+        _isBusy = false;
+
+        if (!result.Succeeded)
+        {
+            _errorMessage = result.Error;
+            return;
+        }
+
+        Snackbar.Add($"Bienvenido, {result.Data!.DisplayName}", Severity.Success);
+        NavigationManager.NavigateTo("/", replace: true);
+    }
+}

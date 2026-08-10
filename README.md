@@ -1,1 +1,80 @@
-agiri1397
+# MauiBlazorCleanArchitecture
+
+Plantilla funcional de una app **.NET MAUI Blazor Hybrid** con **Clean Architecture**, persistencia local en **SQLite** (Entity Framework Core), un **login/registro funcional** (usuarios y contraseñas hasheadas guardados en SQLite), un **ejemplo de consumo de un Web Service REST** (GET/POST) y una interfaz construida **100% con MudBlazor**.
+
+> ⚠️ Esta plantilla se generó en un entorno sin el SDK de .NET ni los workloads de MAUI instalados, por lo que el código **no pudo compilarse ni ejecutarse aquí**. Sigue la sección [Puesta en marcha](#puesta-en-marcha) para compilarla en tu máquina. La estructura, namespaces y paquetes siguen las convenciones estándar de las plantillas oficiales `dotnet new maui-blazor`, así que debería compilar sin cambios; si tu SDK trae versiones distintas de EF Core / MudBlazor, ajusta los rangos de versión en los `.csproj`.
+
+## Arquitectura
+
+```
+MauiBlazorCleanArchitecture.sln
+src/
+  MauiBlazorCleanArchitecture.Domain          -> Entidades (User, TodoItem). Sin dependencias.
+  MauiBlazorCleanArchitecture.Application     -> DTOs, interfaces (puertos) y casos de uso (AuthService, TodoService).
+  MauiBlazorCleanArchitecture.Infrastructure  -> EF Core + SQLite, repositorios, hashing de contraseñas,
+                                                  AuthenticationStateProvider, cliente HTTP para el WS de ejemplo.
+  MauiBlazorCleanArchitecture.UI              -> Razor Class Library con las páginas y layouts (MudBlazor).
+  MauiBlazorCleanArchitecture.Maui            -> Proyecto "head" MAUI (Android/iOS/MacCatalyst/Windows) que
+                                                  aloja el BlazorWebView y hace el wiring de inyección de dependencias.
+tests/
+  MauiBlazorCleanArchitecture.Application.Tests -> Pruebas unitarias (xUnit) de AuthService con dobles en memoria.
+```
+
+Regla de dependencias (Clean Architecture): `Maui` → `UI`/`Infrastructure` → `Application` → `Domain`. La UI solo conoce las interfaces de `Application`; nunca referencia `Infrastructure` directamente. Los detalles de plataforma (SecureStorage) se inyectan desde el proyecto `Maui` implementando `ISecureStorageService`.
+
+## Funcionalidades incluidas
+
+- **Login y registro funcionales** contra SQLite, sin backend: contraseñas con hash PBKDF2 + salt (`Infrastructure/Security/PasswordHasher.cs`), sesión persistida con `SecureStorage` de MAUI, y `AuthenticationStateProvider` propio integrado con `[Authorize]`/`AuthorizeRouteView` de Blazor.
+- **Cuenta demo** creada automáticamente al primer arranque: usuario `demo`, contraseña `Demo123!` (ver `Infrastructure/Persistence/DbInitializer.cs`).
+- **Persistencia local en SQLite** vía EF Core: CRUD completo de tareas (`Pages/Todos.razor`) aislado por usuario logueado.
+- **Ejemplo de consumo de Web Service (REST)**: `Pages/Posts.razor` hace `GET`/`POST` contra `https://jsonplaceholder.typicode.com` usando `HttpClient` tipado registrado con `IHttpClientFactory` (`Infrastructure/Http/PostsApiService.cs`). Cambia la `BaseAddress` en `Infrastructure/DependencyInjection.cs` por tu propia API.
+- **Toda la UI en MudBlazor**: `MudLayout`, `MudAppBar`, `MudDrawer`, `MudNavMenu`, `MudForm`, `MudTextField`, `MudTable`, `MudList`, `MudSnackbar`, `MudDialogProvider`, tema claro/oscuro (`App.razor`).
+
+## Puesta en marcha
+
+### Requisitos
+
+- [.NET SDK 8](https://dotnet.microsoft.com/download) (o superior, ver `global.json`)
+- Workload de MAUI:
+  ```bash
+  dotnet workload install maui
+  ```
+- Para compilar/ejecutar en cada plataforma necesitas las herramientas nativas correspondientes (Android SDK, Xcode para iOS/MacCatalyst, Visual Studio con carga de trabajo ".NET Multi-platform App UI" en Windows).
+
+### Restaurar y compilar
+
+```bash
+dotnet restore MauiBlazorCleanArchitecture.sln
+dotnet build MauiBlazorCleanArchitecture.sln -f net8.0-windows10.0.19041.0   # Windows
+# o el target framework de tu plataforma: net8.0-android / net8.0-ios / net8.0-maccatalyst
+```
+
+### Ejecutar
+
+```bash
+dotnet build -t:Run -f net8.0-android src/MauiBlazorCleanArchitecture.Maui/MauiBlazorCleanArchitecture.Maui.csproj
+```
+
+O abre `MauiBlazorCleanArchitecture.sln` en Visual Studio 2022 (17.8+) con la carga de trabajo MAUI, selecciona el proyecto `MauiBlazorCleanArchitecture.Maui` como proyecto de inicio y el emulador/dispositivo deseado, y pulsa **F5**.
+
+### Pruebas unitarias
+
+```bash
+dotnet test tests/MauiBlazorCleanArchitecture.Application.Tests
+```
+
+## Dónde extender
+
+| Quiero...                                   | Archivo/carpeta                                                             |
+|----------------------------------------------|-------------------------------------------------------------------------------|
+| Agregar una entidad nueva                     | `Domain/Entities`, su `IEntityTypeConfiguration` en `Infrastructure/Persistence/Configurations`, y añadir el `DbSet` en `AppDbContext` |
+| Agregar un caso de uso / servicio             | Interfaz en `Application/Interfaces`, implementación en `Application/Services`, registro en `Application/DependencyInjection.cs` |
+| Consumir otro Web Service                     | Nueva interfaz + implementación siguiendo el patrón de `IPostsApiService`/`PostsApiService`, registrar con `AddHttpClient<TInterfaz, TImpl>()` en `Infrastructure/DependencyInjection.cs` |
+| Agregar una página                            | `.razor` en `UI/Pages`, usando componentes `Mud*`; protégela con `@attribute [Authorize]` si requiere sesión |
+| Cambiar la ruta del archivo SQLite            | `MauiProgram.cs` (`dbPath`) |
+
+## Notas de seguridad
+
+- Las contraseñas nunca se guardan en texto plano: se derivan con PBKDF2-SHA256 (100 000 iteraciones) y salt aleatorio por usuario.
+- La sesión (id del usuario logueado) se guarda con `SecureStorage` de MAUI (Keychain/KeyStore/DPAPI según la plataforma), no en `Preferences` ni en texto plano.
+- El ejemplo de Web Service usa una API pública de pruebas (jsonplaceholder) sin autenticación; si tu backend requiere tokens, añade el header `Authorization` en el `AddHttpClient` correspondiente.
