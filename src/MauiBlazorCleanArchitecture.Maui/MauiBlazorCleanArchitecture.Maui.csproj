@@ -1,8 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0-android;net8.0-ios;net8.0-maccatalyst</TargetFrameworks>
+    <!--
+      iOS/MacCatalyst can only be built with a Mac (or a Mac paired to
+      Visual Studio), so they are excluded from the default build on
+      Windows/Linux to avoid "workload not installed" / path-too-long
+      errors for platforms you can't build anyway. They are included
+      automatically when building on macOS, or on any OS by passing
+      /p:IncludeAppleTargets=true.
+    -->
+    <TargetFrameworks>net8.0-android</TargetFrameworks>
     <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net8.0-windows10.0.19041.0</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('osx')) OR '$(IncludeAppleTargets)' == 'true'">$(TargetFrameworks);net8.0-ios;net8.0-maccatalyst</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <RootNamespace>MauiBlazorCleanArchitecture.Maui</RootNamespace>
     <UseMaui>true</UseMaui>

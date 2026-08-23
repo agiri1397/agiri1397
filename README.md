@@ -35,11 +35,13 @@ Regla de dependencias (Clean Architecture): `Maui` → `UI`/`Infrastructure` →
 ### Requisitos
 
 - [.NET SDK 8](https://dotnet.microsoft.com/download) (o superior, ver `global.json`)
-- Workload de MAUI:
+- Workload de MAUI (instala/actualiza exactamente lo que cada proyecto de la solución necesita):
   ```bash
-  dotnet workload install maui
+  dotnet workload restore
   ```
+  ejecútalo desde la carpeta que contiene `MauiBlazorCleanArchitecture.sln`. Si prefieres instalar todo manualmente: `dotnet workload install maui`.
 - Para compilar/ejecutar en cada plataforma necesitas las herramientas nativas correspondientes (Android SDK, Xcode para iOS/MacCatalyst, Visual Studio con carga de trabajo ".NET Multi-platform App UI" en Windows).
+- **Solo en Windows/Linux**: por defecto `MauiBlazorCleanArchitecture.Maui.csproj` compila para `android` (+ `windows` en Windows), y **omite iOS/MacCatalyst** porque esos targets requieren un Mac. Si compilas desde macOS se incluyen automáticamente; si necesitas forzarlos desde otro SO (por ejemplo en CI con un Mac remoto), compila con `/p:IncludeAppleTargets=true`.
 
 ### Restaurar y compilar
 
@@ -72,6 +74,24 @@ dotnet test tests/MauiBlazorCleanArchitecture.Application.Tests
 | Consumir otro Web Service                     | Nueva interfaz + implementación siguiendo el patrón de `IPostsApiService`/`PostsApiService`, registrar con `AddHttpClient<TInterfaz, TImpl>()` en `Infrastructure/DependencyInjection.cs` |
 | Agregar una página                            | `.razor` en `UI/Pages`, usando componentes `Mud*`; protégela con `@attribute [Authorize]` si requiere sesión |
 | Cambiar la ruta del archivo SQLite            | `MauiProgram.cs` (`dbPath`) |
+
+## Solución de problemas (Windows)
+
+**`NETSDK1147: deben estar instaladas las siguientes cargas de trabajo: android`**
+Falta el workload de Android para el SDK de .NET. Abre una terminal (idealmente como Administrador) en la carpeta del `.sln` y ejecuta:
+```bash
+dotnet workload restore
+```
+Reinicia Visual Studio después de que termine.
+
+**`MSB4184 ... supera el límite máximo para la ruta de acceso del sistema operativo (260 caracteres)`**
+Windows limita la longitud total de una ruta a 260 caracteres, y las carpetas `obj/bin` de MAUI son muy profundas (`obj\Debug\net8.0-windows10.0.19041.0\win10-x64\ref\...`). Esto pasa casi siempre porque el ZIP de GitHub se descomprimió dentro de una carpeta con el mismo nombre (ruta duplicada) y/o el proyecto quedó dentro de `Desktop`. Solución:
+1. Mueve/extrae el proyecto a una ruta corta, por ejemplo `C:\src\agiri1397` (evita `Desktop`, evita carpetas anidadas con el mismo nombre).
+2. Verifica que el archivo `.sln` quede directamente en esa carpeta (`C:\src\agiri1397\MauiBlazorCleanArchitecture.sln`), no dentro de otra carpeta repetida.
+3. Vuelve a compilar.
+
+**Errores "No se puede encontrar ... `.GeneratedMSBuildEditorConfig.editorconfig`"**
+Son un efecto secundario de los dos problemas anteriores (el `obj/` nunca se generó porque falló el restore/workload, o la ruta era demasiado larga). Se resuelven solos al aplicar los dos puntos anteriores; si persisten, borra las carpetas `obj/` y `bin/` de cada proyecto y vuelve a restaurar (`dotnet restore` o *Clean Solution* + *Restore NuGet Packages* en Visual Studio).
 
 ## Notas de seguridad
 
