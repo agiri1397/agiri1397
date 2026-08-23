@@ -1,4 +1,4 @@
-# MauiBlazorCleanArchitecture
+# SistemaILP.Ruteo
 
 Plantilla funcional de una app **.NET MAUI Blazor Hybrid** con **Clean Architecture**, persistencia local en **SQLite** (Entity Framework Core), un **login/registro funcional** (usuarios y contraseñas hasheadas guardados en SQLite), un **ejemplo de consumo de un Web Service REST** (GET/POST) y una interfaz construida **100% con MudBlazor**.
 
@@ -7,17 +7,17 @@ Plantilla funcional de una app **.NET MAUI Blazor Hybrid** con **Clean Architect
 ## Arquitectura
 
 ```
-MauiBlazorCleanArchitecture.sln
+SistemaILP.Ruteo.sln
 src/
-  MauiBlazorCleanArchitecture.Domain          -> Entidades (User, TodoItem). Sin dependencias.
-  MauiBlazorCleanArchitecture.Application     -> DTOs, interfaces (puertos) y casos de uso (AuthService, TodoService).
-  MauiBlazorCleanArchitecture.Infrastructure  -> EF Core + SQLite, repositorios, hashing de contraseñas,
+  SistemaILP.Ruteo.Domain          -> Entidades (User, TodoItem). Sin dependencias.
+  SistemaILP.Ruteo.Application     -> DTOs, interfaces (puertos) y casos de uso (AuthService, TodoService).
+  SistemaILP.Ruteo.Infrastructure  -> EF Core + SQLite, repositorios, hashing de contraseñas,
                                                   AuthenticationStateProvider, cliente HTTP para el WS de ejemplo.
-  MauiBlazorCleanArchitecture.UI              -> Razor Class Library con las páginas y layouts (MudBlazor).
-  MauiBlazorCleanArchitecture.Maui            -> Proyecto "head" MAUI (Android/iOS/MacCatalyst/Windows) que
+  SistemaILP.Ruteo.UI              -> Razor Class Library con las páginas y layouts (MudBlazor).
+  SistemaILP.Ruteo.Maui            -> Proyecto "head" MAUI (Android/iOS/MacCatalyst/Windows) que
                                                   aloja el BlazorWebView y hace el wiring de inyección de dependencias.
 tests/
-  MauiBlazorCleanArchitecture.Application.Tests -> Pruebas unitarias (xUnit) de AuthService con dobles en memoria.
+  SistemaILP.Ruteo.Application.Tests -> Pruebas unitarias (xUnit) de AuthService con dobles en memoria.
 ```
 
 Regla de dependencias (Clean Architecture): `Maui` → `UI`/`Infrastructure` → `Application` → `Domain`. La UI solo conoce las interfaces de `Application`; nunca referencia `Infrastructure` directamente. Los detalles de plataforma (SecureStorage) se inyectan desde el proyecto `Maui` implementando `ISecureStorageService`.
@@ -39,30 +39,30 @@ Regla de dependencias (Clean Architecture): `Maui` → `UI`/`Infrastructure` →
   ```bash
   dotnet workload restore
   ```
-  ejecútalo desde la carpeta que contiene `MauiBlazorCleanArchitecture.sln`. Si prefieres instalar todo manualmente: `dotnet workload install maui`.
+  ejecútalo desde la carpeta que contiene `SistemaILP.Ruteo.sln`. Si prefieres instalar todo manualmente: `dotnet workload install maui`.
 - Para compilar/ejecutar en cada plataforma necesitas las herramientas nativas correspondientes (Android SDK, Xcode para iOS/MacCatalyst, Visual Studio con carga de trabajo ".NET Multi-platform App UI" en Windows).
-- **Solo en Windows/Linux**: por defecto `MauiBlazorCleanArchitecture.Maui.csproj` compila para `android` (+ `windows` en Windows), y **omite iOS/MacCatalyst** porque esos targets requieren un Mac. Si compilas desde macOS se incluyen automáticamente; si necesitas forzarlos desde otro SO (por ejemplo en CI con un Mac remoto), compila con `/p:IncludeAppleTargets=true`.
+- **Solo en Windows/Linux**: por defecto `SistemaILP.Ruteo.Maui.csproj` compila para `android` (+ `windows` en Windows), y **omite iOS/MacCatalyst** porque esos targets requieren un Mac. Si compilas desde macOS se incluyen automáticamente; si necesitas forzarlos desde otro SO (por ejemplo en CI con un Mac remoto), compila con `/p:IncludeAppleTargets=true`.
 
 ### Restaurar y compilar
 
 ```bash
-dotnet restore MauiBlazorCleanArchitecture.sln
-dotnet build MauiBlazorCleanArchitecture.sln -f net8.0-windows10.0.19041.0   # Windows
+dotnet restore SistemaILP.Ruteo.sln
+dotnet build SistemaILP.Ruteo.sln -f net8.0-windows10.0.19041.0   # Windows
 # o el target framework de tu plataforma: net8.0-android / net8.0-ios / net8.0-maccatalyst
 ```
 
 ### Ejecutar
 
 ```bash
-dotnet build -t:Run -f net8.0-android src/MauiBlazorCleanArchitecture.Maui/MauiBlazorCleanArchitecture.Maui.csproj
+dotnet build -t:Run -f net8.0-android src/SistemaILP.Ruteo.Maui/SistemaILP.Ruteo.Maui.csproj
 ```
 
-O abre `MauiBlazorCleanArchitecture.sln` en Visual Studio 2022 (17.8+) con la carga de trabajo MAUI, selecciona el proyecto `MauiBlazorCleanArchitecture.Maui` como proyecto de inicio y el emulador/dispositivo deseado, y pulsa **F5**.
+O abre `SistemaILP.Ruteo.sln` en Visual Studio 2022 (17.8+) con la carga de trabajo MAUI, selecciona el proyecto `SistemaILP.Ruteo.Maui` como proyecto de inicio y el emulador/dispositivo deseado, y pulsa **F5**.
 
 ### Pruebas unitarias
 
 ```bash
-dotnet test tests/MauiBlazorCleanArchitecture.Application.Tests
+dotnet test tests/SistemaILP.Ruteo.Application.Tests
 ```
 
 ## Dónde extender
@@ -87,7 +87,7 @@ Reinicia Visual Studio después de que termine.
 **`MSB4184 ... supera el límite máximo para la ruta de acceso del sistema operativo (260 caracteres)`**
 Windows limita la longitud total de una ruta a 260 caracteres, y las carpetas `obj/bin` de MAUI son muy profundas (`obj\Debug\net8.0-windows10.0.19041.0\win10-x64\ref\...`). Esto pasa casi siempre porque el ZIP de GitHub se descomprimió dentro de una carpeta con el mismo nombre (ruta duplicada) y/o el proyecto quedó dentro de `Desktop`. Solución:
 1. Mueve/extrae el proyecto a una ruta corta, por ejemplo `C:\src\agiri1397` (evita `Desktop`, evita carpetas anidadas con el mismo nombre).
-2. Verifica que el archivo `.sln` quede directamente en esa carpeta (`C:\src\agiri1397\MauiBlazorCleanArchitecture.sln`), no dentro de otra carpeta repetida.
+2. Verifica que el archivo `.sln` quede directamente en esa carpeta (`C:\src\agiri1397\SistemaILP.Ruteo.sln`), no dentro de otra carpeta repetida.
 3. Vuelve a compilar.
 
 **Errores "No se puede encontrar ... `.GeneratedMSBuildEditorConfig.editorconfig`"**
