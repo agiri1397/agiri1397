@@ -5,8 +5,8 @@
 
     @* Menu exclusivo del login. No es navegación: solo configuración
        (tema por ahora), y desaparece por completo una vez autenticado
-       porque este layout nunca se usa fuera de Login/Register. *@
-    <div style="position: absolute; top: 12px; left: 12px; z-index: 10;">
+       porque este layout nunca se usa fuera de Login. *@
+    <div style="position: absolute; top: 12px; right: 12px; z-index: 10;">
         <MudMenu Icon="@Icons.Material.Filled.MoreVert"
                  Color="Color.Default"
                  title="Opciones">
@@ -17,10 +17,10 @@
         </MudMenu>
     </div>
 
-    <MudContainer MaxWidth="MaxWidth.Small" Class="d-flex justify-center align-center" Style="min-height: 100vh;">
-        <MudPaper Elevation="4" Class="pa-8" Style="width: 100%; max-width: 420px;">
+    <MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="d-flex justify-center align-center" Style="min-height: 100vh;">
+        <div style="width: 100%; padding: 24px 8px;">
             @Body
-        </MudPaper>
+        </div>
     </MudContainer>
 </div>
 

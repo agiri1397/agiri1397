@@ -6,52 +6,58 @@
 @inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
 
-<MudText Typo="Typo.h5" Class="mb-1">Iniciar sesión</MudText>
-<MudText Typo="Typo.body2" Class="mb-6" Color="Color.Secondary">
-    Cuenta demo: <b>demo</b> / <b>Demo123!</b>
+<div class="d-flex justify-center mb-1">
+    <img src="images/logo-la-popular.svg" alt="La Popular" style="width: 220px; max-width: 80%; height: auto;" />
+</div>
+
+<MudText Typo="Typo.caption" Align="Align.Center" Color="Color.Secondary" Class="d-flex justify-center mb-8">
+    Cuenta demo: <b>&nbsp;demo&nbsp;</b> / <b>&nbsp;Demo123!</b>
 </MudText>
 
 <MudForm @ref="_form" Model="_model" @bind-IsValid="_isValid">
+    <MudText Typo="Typo.subtitle2" Class="mb-1" Style="font-weight: 600;">
+        Usuario <span style="color: var(--mud-palette-error);">*</span>
+    </MudText>
     <MudTextField T="string"
-                  Label="Usuario o correo"
                   @bind-Value="_model.UserNameOrEmail"
+                  Placeholder="Ingrese su usuario"
+                  Variant="Variant.Outlined"
+                  Class="rounded-lg mb-4"
                   Required="true"
                   RequiredError="Este campo es obligatorio"
-                  Immediate="true"
-                  Class="mb-3" />
+                  Immediate="true" />
 
+    <MudText Typo="Typo.subtitle2" Class="mb-1" Style="font-weight: 600;">
+        Contraseña <span style="color: var(--mud-palette-error);">*</span>
+    </MudText>
     <MudTextField T="string"
-                  Label="Contraseña"
                   @bind-Value="_model.Password"
+                  Placeholder="Ingrese su contraseña"
+                  Variant="Variant.Outlined"
+                  Class="rounded-lg mb-2"
                   InputType="@_passwordInput"
                   Adornment="Adornment.End"
                   AdornmentIcon="@_passwordAdornmentIcon"
                   OnAdornmentClick="TogglePasswordVisibility"
                   Required="true"
                   RequiredError="Este campo es obligatorio"
-                  Immediate="true"
-                  Class="mb-2" />
+                  Immediate="true" />
 
     @if (!string.IsNullOrEmpty(_errorMessage))
     {
-        <MudAlert Severity="Severity.Error" Class="mb-3" Dense="true">@_errorMessage</MudAlert>
+        <MudAlert Severity="Severity.Error" Class="mt-2 mb-2" Dense="true">@_errorMessage</MudAlert>
     }
 
     <MudButton Variant="Variant.Filled"
-               Color="Color.Primary"
                FullWidth="true"
                Disabled="@(!_isValid || _isBusy)"
                OnClick="LoginAsync"
-               Class="mt-2">
+               Class="btn-brand-gradient mt-4 py-3">
         @if (_isBusy)
         {
             <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
         }
-        Entrar
-    </MudButton>
-
-    <MudButton Variant="Variant.Text" FullWidth="true" Class="mt-2" Href="/register">
-        Crear una cuenta nueva
+        Ingresar
     </MudButton>
 </MudForm>
 
@@ -74,7 +80,7 @@
         var currentUser = await AuthService.GetCurrentUserAsync();
         if (currentUser is not null)
         {
-            NavigationManager.NavigateTo("/todos", forceLoad: true);
+            NavigationManager.NavigateTo("/inicio", forceLoad: true);
         }
     }
 
@@ -107,6 +113,6 @@
         }
 
         Snackbar.Add($"Bienvenido, {result.Data!.DisplayName}", Severity.Success);
-        NavigationManager.NavigateTo("/todos", forceLoad: true);
+        NavigationManager.NavigateTo("/inicio", forceLoad: true);
     }
 }
