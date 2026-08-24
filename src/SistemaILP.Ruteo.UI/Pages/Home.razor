@@ -1,0 +1,56 @@
+@page "/inicio"
+@attribute [Authorize]
+@inject IAuthService AuthService
+
+<MudText Typo="Typo.h4" Class="mb-1">Inicio</MudText>
+<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">
+    @if (_displayName is not null)
+    {
+        <text>Hola, @_displayName.</text>
+    }
+</MudText>
+
+<MudAlert Severity="Severity.Info" Class="mb-6">
+    Los módulos de la aplicación todavía no están definidos. Esta pantalla es el punto de partida
+    una vez agregados.
+</MudAlert>
+
+<MudText Typo="Typo.subtitle2" Class="mb-2">Ejemplos técnicos de la plantilla</MudText>
+<MudGrid>
+    <MudItem xs="12" sm="6">
+        <MudCard>
+            <MudCardContent>
+                <MudText Typo="Typo.h6">Tareas (SQLite)</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Ejemplo de persistencia local con Entity Framework Core.
+                </MudText>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Variant="Variant.Text" Color="Color.Primary" Href="/todos">Ver ejemplo</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+    <MudItem xs="12" sm="6">
+        <MudCard>
+            <MudCardContent>
+                <MudText Typo="Typo.h6">Posts (Web Service)</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Ejemplo de consumo de una API REST remota.
+                </MudText>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Variant="Variant.Text" Color="Color.Primary" Href="/posts">Ver ejemplo</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private string? _displayName;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var currentUser = await AuthService.GetCurrentUserAsync();
+        _displayName = currentUser?.DisplayName;
+    }
+}

@@ -1,4 +1,7 @@
-<MudThemeProvider Theme="@AppTheme" />
+@implements IDisposable
+@inject SistemaILP.Ruteo.UI.Services.ThemeState ThemeState
+
+<MudThemeProvider Theme="@SistemaILP.Ruteo.UI.Theme.AppTheme.Default" IsDarkMode="@ThemeState.IsDarkMode" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -22,18 +25,13 @@
 </CascadingAuthenticationState>
 
 @code {
-    private readonly MudTheme AppTheme = new()
+    protected override void OnInitialized()
     {
-        PaletteLight = new PaletteLight
-        {
-            Primary = "#512BD4",
-            Secondary = "#2B0B98",
-            AppbarBackground = "#512BD4"
-        },
-        PaletteDark = new PaletteDark
-        {
-            Primary = "#7C5CFF",
-            Secondary = "#B39DFF"
-        }
-    };
+        ThemeState.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        ThemeState.OnChange -= StateHasChanged;
+    }
 }

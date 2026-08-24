@@ -1,7 +1,32 @@
 @inherits LayoutComponentBase
+@inject ThemeState ThemeState
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex justify-center align-center" Style="min-height: 100vh;">
-    <MudPaper Elevation="4" Class="pa-8" Style="width: 100%; max-width: 420px;">
-        @Body
-    </MudPaper>
-</MudContainer>
+<div style="position: relative; min-height: 100vh;">
+
+    @* Menu exclusivo del login. No es navegación: solo configuración
+       (tema por ahora), y desaparece por completo una vez autenticado
+       porque este layout nunca se usa fuera de Login/Register. *@
+    <div style="position: absolute; top: 12px; left: 12px; z-index: 10;">
+        <MudMenu Icon="@Icons.Material.Filled.MoreVert"
+                 Color="Color.Default"
+                 title="Opciones">
+            <MudMenuItem Icon="@(ThemeState.IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                         OnClick="ToggleTheme">
+                @(ThemeState.IsDarkMode ? "Modo claro" : "Modo oscuro")
+            </MudMenuItem>
+        </MudMenu>
+    </div>
+
+    <MudContainer MaxWidth="MaxWidth.Small" Class="d-flex justify-center align-center" Style="min-height: 100vh;">
+        <MudPaper Elevation="4" Class="pa-8" Style="width: 100%; max-width: 420px;">
+            @Body
+        </MudPaper>
+    </MudContainer>
+</div>
+
+@code {
+    private void ToggleTheme()
+    {
+        ThemeState.IsDarkMode = !ThemeState.IsDarkMode;
+    }
+}

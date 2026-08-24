@@ -1,0 +1,19 @@
+@page "/configuracion"
+@attribute [Authorize]
+@inject ThemeState ThemeState
+
+<MudText Typo="Typo.h4" Class="mb-6">Configuración</MudText>
+
+<MudCard>
+    <MudCardContent>
+        <MudSwitch T="bool"
+                   Value="ThemeState.IsDarkMode"
+                   ValueChanged="@(v => ThemeState.IsDarkMode = v)"
+                   Color="Color.Primary"
+                   Label="Modo oscuro" />
+    </MudCardContent>
+</MudCard>
+
+<MudAlert Severity="Severity.Info" Class="mt-6" Icon="@Icons.Material.Filled.Construction">
+    Más opciones de configuración se agregarán en próximas etapas.
+</MudAlert>

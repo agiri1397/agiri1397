@@ -1,6 +1,9 @@
 html, body {
     height: 100%;
     margin: 0;
+    /* Keeps the page background in sync with the active MudBlazor theme
+       (light/dark) even outside MudContainer's own bounds. */
+    background-color: var(--mud-palette-background, #F7F9FC);
 }
 
 #blazor-error-ui {
