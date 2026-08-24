@@ -94,6 +94,6 @@
         }
 
         Snackbar.Add($"Bienvenido, {result.Data!.DisplayName}", Severity.Success);
-        NavigationManager.NavigateTo("/", replace: true);
+        NavigationManager.NavigateTo("/", forceLoad: true);
     }
 }

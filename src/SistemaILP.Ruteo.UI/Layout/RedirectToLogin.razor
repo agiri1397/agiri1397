@@ -3,6 +3,11 @@
 @code {
     protected override void OnInitialized()
     {
-        NavigationManager.NavigateTo("/login", replace: true);
+        // forceLoad: true - a soft client-side redirect from inside
+        // AuthorizeRouteView's <NotAuthorized> fragment was not reliably
+        // completing in the Android BlazorWebView, leaving the app stuck
+        // on the (empty) NotAuthorized render. Forcing a full reload of
+        // the "/login" route sidesteps that.
+        NavigationManager.NavigateTo("/login", forceLoad: true);
     }
 }

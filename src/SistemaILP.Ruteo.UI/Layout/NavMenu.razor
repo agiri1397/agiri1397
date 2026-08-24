@@ -5,13 +5,20 @@
     <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.CheckBox">Tareas (SQLite)</MudNavLink>
     <MudNavLink Href="/posts" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.CloudSync">Posts (Web Service)</MudNavLink>
     <MudDivider Class="my-2" />
-    <MudNavLink OnClick="LogoutAsync" Icon="@Icons.Material.Filled.Logout">Cerrar sesión</MudNavLink>
+    <MudButton Variant="Variant.Text"
+               Color="Color.Inherit"
+               FullWidth="true"
+               StartIcon="@Icons.Material.Filled.Logout"
+               Class="justify-start px-4"
+               OnClick="LogoutAsync">
+        Cerrar sesión
+    </MudButton>
 </MudNavMenu>
 
 @code {
     private async Task LogoutAsync()
     {
         await AuthService.LogoutAsync();
-        NavigationManager.NavigateTo("/login", replace: true);
+        NavigationManager.NavigateTo("/login", forceLoad: true);
     }
 }
