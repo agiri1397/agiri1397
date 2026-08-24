@@ -16,7 +16,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\SistemaILP.Ruteo.Application\SistemaILP.Ruteo.Application.csproj" />
-    <ProjectReference Include="..\..\src\SistemaILP.Ruteo.Infrastructure\SistemaILP.Ruteo.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

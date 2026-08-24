@@ -5,109 +5,147 @@ using SistemaILP.Ruteo.Domain.Entities;
 
 namespace SistemaILP.Ruteo.Application.Services;
 
+/// <summary>
+/// Migracion literal de LoginService.java (rama login_remoto +
+/// mangeSuccessfullLogin). Autentica contra el Web Service real
+/// (POST validarUsuario), y ante un login exitoso crea/actualiza la
+/// fila de sesion en la tabla "usuario" - exactamente igual que la app
+/// Android existente. El login local/offline de Android (LOGIN_LOCAL)
+/// queda fuera de esta etapa.
+/// </summary>
 public class AuthService : IAuthService
 {
-    public const string SessionUserIdKey = "current_user_id";
+    // Igual que en Android: DeviceInfo.getImei() esta temporalmente
+    // hardcodeado a este valor mientras no se tengan los dispositivos
+    // finales disponibles (ver comentario en LoginService.java). Se
+    // replica tal cual, no es una decision de esta migracion.
+    private const string TemporaryImei = "000000000000000";
 
-    private readonly IUserRepository _userRepository;
-    private readonly IPasswordHasher _passwordHasher;
-    private readonly ISecureStorageService _secureStorage;
+    private readonly ILoginWebServiceClient _loginWebServiceClient;
+    private readonly IUsuarioRepository _usuarioRepository;
     private readonly IAuthStateNotifier _authStateNotifier;
 
     public AuthService(
-        IUserRepository userRepository,
-        IPasswordHasher passwordHasher,
-        ISecureStorageService secureStorage,
+        ILoginWebServiceClient loginWebServiceClient,
+        IUsuarioRepository usuarioRepository,
         IAuthStateNotifier authStateNotifier)
     {
-        _userRepository = userRepository;
-        _passwordHasher = passwordHasher;
-        _secureStorage = secureStorage;
+        _loginWebServiceClient = loginWebServiceClient;
+        _usuarioRepository = usuarioRepository;
         _authStateNotifier = authStateNotifier;
     }
 
-    public async Task<Result<CurrentUserDto>> LoginAsync(LoginRequestDto request)
+    public async Task<Result<SesionUsuarioDto>> LoginAsync(LoginCredentialsDto credentials)
     {
-        if (string.IsNullOrWhiteSpace(request.UserNameOrEmail) || string.IsNullOrWhiteSpace(request.Password))
+        if (string.IsNullOrWhiteSpace(credentials.Usuario) || string.IsNullOrWhiteSpace(credentials.Password))
         {
-            return Result<CurrentUserDto>.Failure("Usuario/email y contraseña son obligatorios.");
+            return Result<SesionUsuarioDto>.Failure("Usuario y contraseña son obligatorios.");
         }
 
-        var user = await _userRepository.GetByUserNameOrEmailAsync(request.UserNameOrEmail.Trim());
-        if (user is null || !_passwordHasher.VerifyPassword(request.Password, user.PasswordHash, user.PasswordSalt))
+        var wsRequest = new WsLoginRequestDto
         {
-            return Result<CurrentUserDto>.Failure("Usuario o contraseña incorrectos.");
-        }
-
-        await _secureStorage.SetAsync(SessionUserIdKey, user.Id.ToString());
-        _authStateNotifier.NotifyAuthenticationStateChanged();
-
-        return Result<CurrentUserDto>.Success(MapToDto(user));
-    }
-
-    public async Task<Result<CurrentUserDto>> RegisterAsync(RegisterRequestDto request)
-    {
-        if (string.IsNullOrWhiteSpace(request.UserName) ||
-            string.IsNullOrWhiteSpace(request.Email) ||
-            string.IsNullOrWhiteSpace(request.Password))
-        {
-            return Result<CurrentUserDto>.Failure("Todos los campos obligatorios deben completarse.");
-        }
-
-        if (request.Password.Length < 6)
-        {
-            return Result<CurrentUserDto>.Failure("La contraseña debe tener al menos 6 caracteres.");
-        }
-
-        var exists = await _userRepository.ExistsAsync(request.UserName.Trim(), request.Email.Trim());
-        if (exists)
-        {
-            return Result<CurrentUserDto>.Failure("Ya existe un usuario con ese nombre o correo.");
-        }
-
-        var (hash, salt) = _passwordHasher.HashPassword(request.Password);
-
-        var user = new User
-        {
-            UserName = request.UserName.Trim(),
-            Email = request.Email.Trim(),
-            DisplayName = string.IsNullOrWhiteSpace(request.DisplayName) ? request.UserName.Trim() : request.DisplayName.Trim(),
-            PasswordHash = hash,
-            PasswordSalt = salt
+            Usuario = credentials.Usuario.Trim(),
+            Password = credentials.Password,
+            Imei = TemporaryImei
         };
 
-        user = await _userRepository.AddAsync(user);
+        var wsResult = await _loginWebServiceClient.LoginAsync(wsRequest);
+        if (!wsResult.Succeeded)
+        {
+            return Result<SesionUsuarioDto>.Failure(wsResult.Error!);
+        }
 
-        await _secureStorage.SetAsync(SessionUserIdKey, user.Id.ToString());
+        var response = wsResult.Data!;
+
+        // Igual que Android: el exito lo determina "resultado", no el
+        // status HTTP (ver WsResultDTO.SUCCESSFULL_LOGIN = 1).
+        if (response.Resultado != 1)
+        {
+            return Result<SesionUsuarioDto>.Failure(
+                string.IsNullOrWhiteSpace(response.Mensaje) ? "Usuario o contraseña incorrectos." : response.Mensaje);
+        }
+
+        var configuracion = response.Configuracion;
+        if (configuracion is null)
+        {
+            return Result<SesionUsuarioDto>.Failure("El servidor no devolvió una respuesta válida.");
+        }
+
+        await GuardarSesionAsync(wsRequest.Usuario, credentials.Password, configuracion);
+
         _authStateNotifier.NotifyAuthenticationStateChanged();
 
-        return Result<CurrentUserDto>.Success(MapToDto(user));
+        return Result<SesionUsuarioDto>.Success(new SesionUsuarioDto
+        {
+            AsCodigoUsuario = wsRequest.Usuario,
+            Vendedor = configuracion.CodigoVendedor,
+            Nombre = configuracion.NombreVendedor
+        });
     }
 
-    public async Task LogoutAsync()
+    /// <summary>Migracion literal de LoginService.mangeSuccessfullLogin.</summary>
+    private async Task GuardarSesionAsync(string asCodigoUsuario, string password, ConfiguracionDto configuracion)
     {
-        _secureStorage.Remove(SessionUserIdKey);
+        var existente = await _usuarioRepository.GetByCodigoUsuarioAsync(asCodigoUsuario);
+
+        if (existente is not null)
+        {
+            // Igual que Android: NO se actualiza la contraseña de un
+            // usuario ya existente en un login exitoso.
+            existente.SesionActiva = true;
+            existente.Vendedor = configuracion.CodigoVendedor;
+            existente.Nombre = configuracion.NombreVendedor;
+
+            await _usuarioRepository.UpsertAsync(existente);
+        }
+        else
+        {
+            await _usuarioRepository.UpsertAsync(new Usuario
+            {
+                AsCodigoUsuario = asCodigoUsuario,
+                PassW = password,
+                SesionActiva = true,
+                Vendedor = configuracion.CodigoVendedor,
+                Nombre = configuracion.NombreVendedor
+            });
+        }
+    }
+
+    public async Task<Result> LogoutAsync()
+    {
+        var sesion = await _usuarioRepository.GetSesionActivaAsync();
+        if (sesion is null)
+        {
+            _authStateNotifier.NotifyAuthenticationStateChanged();
+            return Result.Success();
+        }
+
+        try
+        {
+            await _usuarioRepository.DeleteAsync(sesion.AsCodigoUsuario);
+        }
+        catch (Exception ex)
+        {
+            return Result.Failure($"No se pudo cerrar la sesión correctamente: {ex.Message}");
+        }
+
         _authStateNotifier.NotifyAuthenticationStateChanged();
-        await Task.CompletedTask;
+        return Result.Success();
     }
 
-    public async Task<CurrentUserDto?> GetCurrentUserAsync()
+    public async Task<SesionUsuarioDto?> GetCurrentSessionAsync()
     {
-        var idText = await _secureStorage.GetAsync(SessionUserIdKey);
-        if (string.IsNullOrEmpty(idText) || !int.TryParse(idText, out var id))
+        var usuario = await _usuarioRepository.GetSesionActivaAsync();
+        if (usuario is null)
         {
             return null;
         }
 
-        var user = await _userRepository.GetByIdAsync(id);
-        return user is null ? null : MapToDto(user);
+        return new SesionUsuarioDto
+        {
+            AsCodigoUsuario = usuario.AsCodigoUsuario,
+            Vendedor = usuario.Vendedor,
+            Nombre = usuario.Nombre
+        };
     }
-
-    private static CurrentUserDto MapToDto(User user) => new()
-    {
-        Id = user.Id,
-        UserName = user.UserName,
-        Email = user.Email,
-        DisplayName = user.DisplayName
-    };
 }

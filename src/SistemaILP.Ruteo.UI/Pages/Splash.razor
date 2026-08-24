@@ -1,0 +1,54 @@
+@page "/"
+@attribute [AllowAnonymous]
+@layout Layout.SplashLayout
+@inject IDbInitializer DbInitializer
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+@inject ILogger<Splash> Logger
+
+<img src="images/logo-la-popular.svg" alt="La Popular" style="width: 180px; max-width: 70%; height: auto;" class="mb-8" />
+
+@if (_hasError)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4" Style="max-width: 360px;">
+        No fue posible iniciar la aplicación. Verifique su almacenamiento disponible e inténtelo nuevamente.
+    </MudAlert>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="IniciarAsync">
+        Reintentar
+    </MudButton>
+}
+else
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mb-4" />
+    <MudText Typo="Typo.body2" Color="Color.Secondary">Verificando sesión…</MudText>
+}
+
+@code {
+    private bool _hasError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await IniciarAsync();
+    }
+
+    private async Task IniciarAsync()
+    {
+        _hasError = false;
+
+        try
+        {
+            // Seccion 46: si la BD no puede abrirse, NO se asume "sin
+            // sesion" - se detiene el arranque y se ofrece reintentar.
+            await DbInitializer.InitializeAsync();
+
+            var sesion = await AuthService.GetCurrentSessionAsync();
+
+            NavigationManager.NavigateTo(sesion is not null ? "/inicio" : "/login", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fallo al inicializar la base de datos local durante el arranque.");
+            _hasError = true;
+        }
+    }
+}

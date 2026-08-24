@@ -2,6 +2,7 @@
 @implements IDisposable
 @inject NavigationManager NavigationManager
 @inject IAuthService AuthService
+@inject ISnackbar Snackbar
 
 <MudLayout>
     <MudAppBar Elevation="1">
@@ -76,7 +77,18 @@
 
     private async Task LogoutAsync()
     {
-        await AuthService.LogoutAsync();
+        var result = await AuthService.LogoutAsync();
+
+        if (!result.Succeeded)
+        {
+            // No se oculta el error: si no se pudo limpiar la sesion en
+            // BD, la sesion sigue existiendo (se volveria a recuperar al
+            // reabrir la app), asi que NO navegamos al Login todavia -
+            // se deja al usuario reintentar.
+            Snackbar.Add(result.Error, Severity.Error);
+            return;
+        }
+
         NavigationManager.NavigateTo("/", forceLoad: true);
     }
 

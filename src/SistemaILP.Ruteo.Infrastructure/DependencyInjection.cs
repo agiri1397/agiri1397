@@ -1,9 +1,9 @@
+using SistemaILP.Ruteo.Application.Configuration;
 using SistemaILP.Ruteo.Application.Interfaces;
 using SistemaILP.Ruteo.Infrastructure.Auth;
 using SistemaILP.Ruteo.Infrastructure.Http;
 using SistemaILP.Ruteo.Infrastructure.Persistence;
 using SistemaILP.Ruteo.Infrastructure.Repositories;
-using SistemaILP.Ruteo.Infrastructure.Security;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,20 +14,18 @@ public static class DependencyInjection
 {
     /// <summary>
     /// Wires up SQLite persistence, repositories, auth infrastructure and
-    /// the sample WS (HTTP) client. <paramref name="dbPath"/> should be an
-    /// absolute path inside the app's writable data directory
-    /// (e.g. FileSystem.AppDataDirectory in the MAUI head project).
+    /// el Web Service client real de login. La Base URL y la ruta de la
+    /// base de datos vienen de AppConfiguration, construido una sola vez
+    /// en el proyecto Maui - Infrastructure no decide variante ni entorno,
+    /// solo consume los valores ya resueltos.
     /// </summary>
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, string dbPath)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, AppConfiguration configuration)
     {
         services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlite($"Data Source={dbPath}"));
+            options.UseSqlite($"Data Source={configuration.Database.FullPath}"));
 
-        services.AddScoped<IUserRepository, UserRepository>();
-        services.AddScoped<ITodoRepository, TodoRepository>();
+        services.AddScoped<IUsuarioRepository, UsuarioRepository>();
         services.AddScoped<IDbInitializer, DbInitializer>();
-
-        services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
         services.AddScoped<CustomAuthenticationStateProvider>();
         services.AddScoped<AuthenticationStateProvider>(sp =>
@@ -35,10 +33,10 @@ public static class DependencyInjection
         services.AddScoped<IAuthStateNotifier>(sp =>
             sp.GetRequiredService<CustomAuthenticationStateProvider>());
 
-        services.AddHttpClient<IPostsApiService, PostsApiService>(client =>
+        services.AddHttpClient<ILoginWebServiceClient, LoginWebServiceClient>(client =>
         {
-            client.BaseAddress = new Uri("https://jsonplaceholder.typicode.com/");
-            client.Timeout = TimeSpan.FromSeconds(15);
+            client.BaseAddress = new Uri(configuration.WebService.BaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(30);
         });
 
         return services;

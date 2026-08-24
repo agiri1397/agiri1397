@@ -5,11 +5,15 @@ namespace SistemaILP.Ruteo.Application.Interfaces;
 
 public interface IAuthService
 {
-    Task<Result<CurrentUserDto>> LoginAsync(LoginRequestDto request);
+    Task<Result<SesionUsuarioDto>> LoginAsync(LoginCredentialsDto credentials);
 
-    Task<Result<CurrentUserDto>> RegisterAsync(RegisterRequestDto request);
+    /// <summary>
+    /// Elimina la fila de la sesion activa en la tabla "usuario" (mismos
+    /// datos creados/actualizados durante el login) y limpia el estado
+    /// de autenticacion en memoria. Devuelve Failure si la limpieza de
+    /// BD falla - el llamador debe mostrar el error, no ocultarlo.
+    /// </summary>
+    Task<Result> LogoutAsync();
 
-    Task LogoutAsync();
-
-    Task<CurrentUserDto?> GetCurrentUserAsync();
+    Task<SesionUsuarioDto?> GetCurrentSessionAsync();
 }

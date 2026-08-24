@@ -4,7 +4,7 @@
 
 <MudText Typo="Typo.h4" Class="mb-6">Perfil</MudText>
 
-@if (_currentUser is null)
+@if (_sesion is null)
 {
     <MudProgressCircular Indeterminate="true" />
 }
@@ -14,24 +14,24 @@ else
         <MudCardContent>
             <div class="d-flex align-center mb-4" style="gap: 16px;">
                 <MudAvatar Color="Color.Primary" Size="Size.Large">
-                    @(_currentUser.DisplayName.Length > 0 ? _currentUser.DisplayName[0].ToString().ToUpperInvariant() : "?")
+                    @(_sesion.Nombre.Length > 0 ? _sesion.Nombre[0].ToString().ToUpperInvariant() : "?")
                 </MudAvatar>
                 <div>
-                    <MudText Typo="Typo.h6">@_currentUser.DisplayName</MudText>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">@@@_currentUser.UserName</MudText>
+                    <MudText Typo="Typo.h6">@_sesion.Nombre</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@@@_sesion.AsCodigoUsuario</MudText>
                 </div>
             </div>
             <MudDivider Class="mb-4" />
-            <MudText Typo="Typo.body1"><b>Correo:</b> @_currentUser.Email</MudText>
+            <MudText Typo="Typo.body1"><b>Código de vendedor:</b> @_sesion.Vendedor</MudText>
         </MudCardContent>
     </MudCard>
 }
 
 @code {
-    private CurrentUserDto? _currentUser;
+    private SesionUsuarioDto? _sesion;
 
     protected override async Task OnInitializedAsync()
     {
-        _currentUser = await AuthService.GetCurrentUserAsync();
+        _sesion = await AuthService.GetCurrentSessionAsync();
     }
 }

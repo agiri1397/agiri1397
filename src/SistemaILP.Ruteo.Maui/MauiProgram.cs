@@ -1,7 +1,8 @@
 using SistemaILP.Ruteo.Application;
-using SistemaILP.Ruteo.Application.Interfaces;
+using SistemaILP.Ruteo.Application.Configuration;
 using SistemaILP.Ruteo.Infrastructure;
 using SistemaILP.Ruteo.Maui.Services;
+using SistemaILP.Ruteo.Application.Interfaces;
 using SistemaILP.Ruteo.UI.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,14 +22,11 @@ public static class MauiProgram
         builder.Services.AddMudServices();
         builder.Services.AddAuthorizationCore();
 
-        // SQLite database file lives in the app's private, writable data
-        // directory so it survives app restarts and is not accessible to
-        // other apps.
-        var dbPath = Path.Combine(FileSystem.AppDataDirectory, "mauiblazor.app.db3");
+        var appConfiguration = BuildAppConfiguration();
+        builder.Services.AddSingleton(appConfiguration);
 
         builder.Services.AddApplication();
-        builder.Services.AddInfrastructure(dbPath);
-        builder.Services.AddSingleton<ISecureStorageService, MauiSecureStorageService>();
+        builder.Services.AddInfrastructure(appConfiguration);
         builder.Services.AddSingleton<IPreferencesService, MauiPreferencesService>();
         builder.Services.AddSingleton<ThemeState>();
 
@@ -37,14 +35,53 @@ public static class MauiProgram
         builder.Logging.AddDebug();
 #endif
 
-        var app = builder.Build();
+        // A proposito NO se inicializa la base de datos aqui de forma
+        // bloqueante: si la BD no puede abrirse, este seria el punto en
+        // el que la app crashearia antes de mostrar ninguna UI. En vez de
+        // eso, Splash.razor la inicializa de forma asincrona al arrancar
+        // y maneja el error mostrando un mensaje con reintentar (ver
+        // seccion 45/46 de los requerimientos).
+        return builder.Build();
+    }
 
-        using (var scope = app.Services.CreateScope())
+    private static AppVariant ResolveVariant()
+    {
+        // Unico lugar de conditional compilation para la variante - el
+        // property AppVariant del csproj (VARIANT_PREVENTA / VARIANT_AUTOVENTA
+        // / VARIANT_DESPACHOS) se resuelve aqui, una sola vez, y de ahi en
+        // adelante todo el resto de la app trabaja con AppConfiguration.Variant.
+#if VARIANT_AUTOVENTA
+        return AppVariant.Autoventa;
+#elif VARIANT_DESPACHOS
+        return AppVariant.Despachos;
+#else
+        return AppVariant.Preventa;
+#endif
+    }
+
+    private static AppConfiguration BuildAppConfiguration()
+    {
+        var variant = ResolveVariant();
+
+        var databaseName = "aurora.db3";
+        var databasePath = Path.Combine(FileSystem.AppDataDirectory, databaseName);
+
+        return new AppConfiguration
         {
-            var dbInitializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
-            dbInitializer.InitializeAsync().GetAwaiter().GetResult();
-        }
-
-        return app;
+            Variant = variant,
+            DisplayVersion = AppInfo.Current.VersionString,
+            BuildNumber = AppInfo.Current.BuildString,
+            WebService = new WebServiceConfiguration
+            {
+                // TODO: reemplazar por la Base URL real (Preventa/Autoventa/
+                // Despachos comparten la misma por ahora). Debe terminar en "/".
+                BaseUrl = "https://pendiente-configurar-base-url.example/api/"
+            },
+            Database = new DatabaseConfiguration
+            {
+                DatabaseName = databaseName,
+                FullPath = databasePath
+            }
+        };
     }
 }

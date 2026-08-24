@@ -1,58 +1,49 @@
 using System.Security.Claims;
 using SistemaILP.Ruteo.Application.Interfaces;
-using SistemaILP.Ruteo.Application.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 
 namespace SistemaILP.Ruteo.Infrastructure.Auth;
 
 /// <summary>
-/// Blazor AuthenticationStateProvider backed by the locally persisted
-/// session (see ISecureStorageService) and the SQLite user store.
-/// Registered both as AuthenticationStateProvider and IAuthStateNotifier
-/// so the Application layer can trigger a refresh after login/logout
-/// without depending on ASP.NET Core Components types.
+/// Blazor AuthenticationStateProvider respaldado por la fila de sesion
+/// activa en la tabla "usuario" (a lo sumo una: login hace upsert,
+/// logout elimina la fila - ver AuthService). Registrado tanto como
+/// AuthenticationStateProvider como IAuthStateNotifier para que la capa
+/// Application pueda pedir un refresh tras login/logout sin depender de
+/// tipos de ASP.NET Core Components.
 ///
-/// Depends directly on IUserRepository/ISecureStorageService (instead of
-/// IAuthService) on purpose: AuthService itself depends on
-/// IAuthStateNotifier, and depending on IAuthService here would create a
-/// circular dependency graph in the DI container.
+/// Depende directamente de IUsuarioRepository (no de IAuthService) a
+/// proposito: AuthService depende de IAuthStateNotifier, y depender de
+/// IAuthService aqui crearia un ciclo en el contenedor de DI.
 /// </summary>
 public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IAuthStateNotifier
 {
     private static readonly ClaimsPrincipal Anonymous = new(new ClaimsIdentity());
 
-    private readonly IUserRepository _userRepository;
-    private readonly ISecureStorageService _secureStorage;
+    private readonly IUsuarioRepository _usuarioRepository;
 
-    public CustomAuthenticationStateProvider(IUserRepository userRepository, ISecureStorageService secureStorage)
+    public CustomAuthenticationStateProvider(IUsuarioRepository usuarioRepository)
     {
-        _userRepository = userRepository;
-        _secureStorage = secureStorage;
+        _usuarioRepository = usuarioRepository;
     }
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
-        var idText = await _secureStorage.GetAsync(AuthService.SessionUserIdKey);
-        if (string.IsNullOrEmpty(idText) || !int.TryParse(idText, out var userId))
-        {
-            return new AuthenticationState(Anonymous);
-        }
-
-        var user = await _userRepository.GetByIdAsync(userId);
-        if (user is null)
+        var usuario = await _usuarioRepository.GetSesionActivaAsync();
+        if (usuario is null)
         {
             return new AuthenticationState(Anonymous);
         }
 
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Name, user.UserName),
-            new Claim(ClaimTypes.Email, user.Email),
-            new Claim("display_name", user.DisplayName)
+            new Claim(ClaimTypes.NameIdentifier, usuario.AsCodigoUsuario),
+            new Claim(ClaimTypes.Name, usuario.AsCodigoUsuario),
+            new Claim("vendedor", usuario.Vendedor),
+            new Claim("nombre", usuario.Nombre)
         };
 
-        var identity = new ClaimsIdentity(claims, authenticationType: "LocalSqlite");
+        var identity = new ClaimsIdentity(claims, authenticationType: "SistemaILP");
         return new AuthenticationState(new ClaimsPrincipal(identity));
     }
 

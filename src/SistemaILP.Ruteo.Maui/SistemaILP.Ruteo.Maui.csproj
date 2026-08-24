@@ -21,8 +21,23 @@
 
     <ApplicationTitle>SistemaILP.Ruteo</ApplicationTitle>
     <ApplicationId>com.sistemailp.ruteo</ApplicationId>
-    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <!-- Fuente unica de version/build: leidas en runtime via AppInfo.Current
+         (Microsoft.Maui.ApplicationModel), nunca escritas a mano en ninguna pantalla. -->
+    <ApplicationDisplayVersion>1.0.0</ApplicationDisplayVersion>
     <ApplicationVersion>1</ApplicationVersion>
+
+    <!--
+      Variante de la app: Preventa | Autoventa | Despachos.
+      (PreventaNicaragua queda reservada para una etapa posterior, NO implementar.)
+      Cambia la variante SIN tocar ningun componente Razor, por ejemplo:
+        dotnet build -p:AppVariant=Autoventa
+      o editando el valor por defecto de abajo / sobreescribiendolo desde un
+      Directory.Build.props local (no versionado) si se prefiere no pasarlo por linea de comandos.
+    -->
+    <AppVariant Condition="'$(AppVariant)' == ''">Preventa</AppVariant>
+    <DefineConstants Condition="'$(AppVariant)' == 'Preventa'">$(DefineConstants);VARIANT_PREVENTA</DefineConstants>
+    <DefineConstants Condition="'$(AppVariant)' == 'Autoventa'">$(DefineConstants);VARIANT_AUTOVENTA</DefineConstants>
+    <DefineConstants Condition="'$(AppVariant)' == 'Despachos'">$(DefineConstants);VARIANT_DESPACHOS</DefineConstants>
 
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>

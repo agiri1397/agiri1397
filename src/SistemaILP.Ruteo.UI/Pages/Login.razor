@@ -1,4 +1,3 @@
-@page "/"
 @page "/login"
 @attribute [AllowAnonymous]
 @layout Layout.LoginLayout
@@ -6,25 +5,22 @@
 @inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
 
-<div class="d-flex justify-center mb-1">
+<div class="d-flex justify-center mb-8">
     <img src="images/logo-la-popular.svg" alt="La Popular" style="width: 220px; max-width: 80%; height: auto;" />
 </div>
-
-<MudText Typo="Typo.caption" Align="Align.Center" Color="Color.Secondary" Class="d-flex justify-center mb-8">
-    Cuenta demo: <b>&nbsp;demo&nbsp;</b> / <b>&nbsp;Demo123!</b>
-</MudText>
 
 <MudForm @ref="_form" Model="_model" @bind-IsValid="_isValid">
     <MudText Typo="Typo.subtitle2" Class="mb-1" Style="font-weight: 600;">
         Usuario <span style="color: var(--mud-palette-error);">*</span>
     </MudText>
     <MudTextField T="string"
-                  @bind-Value="_model.UserNameOrEmail"
+                  @bind-Value="_model.Usuario"
                   Placeholder="Ingrese su usuario"
                   Variant="Variant.Outlined"
                   Class="rounded-lg mb-4"
                   Required="true"
                   RequiredError="Este campo es obligatorio"
+                  Disabled="_isBusy"
                   Immediate="true" />
 
     <MudText Typo="Typo.subtitle2" Class="mb-1" Style="font-weight: 600;">
@@ -41,6 +37,7 @@
                   OnAdornmentClick="TogglePasswordVisibility"
                   Required="true"
                   RequiredError="Este campo es obligatorio"
+                  Disabled="_isBusy"
                   Immediate="true" />
 
     @if (!string.IsNullOrEmpty(_errorMessage))
@@ -62,7 +59,7 @@
 </MudForm>
 
 @code {
-    private readonly LoginRequestDto _model = new();
+    private readonly LoginCredentialsDto _model = new();
     private MudForm _form = null!;
     private bool _isValid;
     private bool _isBusy;
@@ -71,18 +68,6 @@
     private bool _passwordVisible;
     private InputType _passwordInput = InputType.Password;
     private string _passwordAdornmentIcon = Icons.Material.Filled.VisibilityOff;
-
-    protected override async Task OnInitializedAsync()
-    {
-        // "/" is this page, so an already-authenticated user landing here
-        // (app relaunch with a saved session) needs to be sent straight to
-        // the app instead of seeing the login form again.
-        var currentUser = await AuthService.GetCurrentUserAsync();
-        if (currentUser is not null)
-        {
-            NavigationManager.NavigateTo("/inicio", forceLoad: true);
-        }
-    }
 
     private void TogglePasswordVisibility()
     {
@@ -112,7 +97,7 @@
             return;
         }
 
-        Snackbar.Add($"Bienvenido, {result.Data!.DisplayName}", Severity.Success);
+        Snackbar.Add($"Bienvenido, {result.Data!.Nombre}", Severity.Success);
         NavigationManager.NavigateTo("/inicio", forceLoad: true);
     }
 }

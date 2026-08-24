@@ -1,34 +1,37 @@
 # SistemaILP.Ruteo
 
-Plantilla funcional de una app **.NET MAUI Blazor Hybrid** con **Clean Architecture**, persistencia local en **SQLite** (Entity Framework Core), un **login/registro funcional** (usuarios y contraseñas hasheadas guardados en SQLite), un **ejemplo de consumo de un Web Service REST** (GET/POST) y una interfaz construida **100% con MudBlazor**.
-
-> ⚠️ Esta plantilla se generó en un entorno sin el SDK de .NET ni los workloads de MAUI instalados, por lo que el código **no pudo compilarse ni ejecutarse aquí**. Sigue la sección [Puesta en marcha](#puesta-en-marcha) para compilarla en tu máquina. La estructura, namespaces y paquetes siguen las convenciones estándar de las plantillas oficiales `dotnet new maui-blazor`, así que debería compilar sin cambios; si tu SDK trae versiones distintas de EF Core / MudBlazor, ajusta los rangos de versión en los `.csproj`.
+App **.NET MAUI Blazor Hybrid** con **Clean Architecture**, migración de la app Android existente (Preventa/Autoventa/Despachos). Login real contra el Web Service (`POST validarUsuario`), persistencia local en **SQLite** compatible con el esquema de la app Android (tabla `usuario`), navegación independiente entre Login y App, tema claro/oscuro global y soporte de variantes (`Preventa`/`Autoventa`/`Despachos`) desde una sola base de código.
 
 ## Arquitectura
 
 ```
 SistemaILP.Ruteo.sln
 src/
-  SistemaILP.Ruteo.Domain          -> Entidades (User, TodoItem). Sin dependencias.
-  SistemaILP.Ruteo.Application     -> DTOs, interfaces (puertos) y casos de uso (AuthService, TodoService).
-  SistemaILP.Ruteo.Infrastructure  -> EF Core + SQLite, repositorios, hashing de contraseñas,
-                                                  AuthenticationStateProvider, cliente HTTP para el WS de ejemplo.
+  SistemaILP.Ruteo.Domain          -> Entidades (Usuario, mapeada 1:1 a la tabla "usuario" de Android). Sin dependencias.
+  SistemaILP.Ruteo.Application     -> Configuracion central (AppVariant/AppConfiguration), DTOs del WS,
+                                       interfaces (puertos) y casos de uso (AuthService).
+  SistemaILP.Ruteo.Infrastructure  -> EF Core + SQLite, repositorios, AuthenticationStateProvider,
+                                       cliente HTTP del login real (LoginWebServiceClient).
   SistemaILP.Ruteo.UI              -> Razor Class Library con las páginas y layouts (MudBlazor).
-  SistemaILP.Ruteo.Maui            -> Proyecto "head" MAUI (Android/iOS/MacCatalyst/Windows) que
-                                                  aloja el BlazorWebView y hace el wiring de inyección de dependencias.
+  SistemaILP.Ruteo.Maui            -> Proyecto "head" MAUI (Android/iOS/MacCatalyst/Windows): wiring de DI,
+                                       resuelve la variante activa y construye AppConfiguration.
 tests/
   SistemaILP.Ruteo.Application.Tests -> Pruebas unitarias (xUnit) de AuthService con dobles en memoria.
 ```
 
-Regla de dependencias (Clean Architecture): `Maui` → `UI`/`Infrastructure` → `Application` → `Domain`. La UI solo conoce las interfaces de `Application`; nunca referencia `Infrastructure` directamente. Los detalles de plataforma (SecureStorage) se inyectan desde el proyecto `Maui` implementando `ISecureStorageService`.
+Regla de dependencias (Clean Architecture): `Maui` → `UI`/`Infrastructure` → `Application` → `Domain`. La UI solo conoce las interfaces de `Application`; nunca referencia `Infrastructure` directamente, ni contiene URLs, SQL ni lógica de variante.
 
 ## Funcionalidades incluidas
 
-- **Login y registro funcionales** contra SQLite, sin backend: contraseñas con hash PBKDF2 + salt (`Infrastructure/Security/PasswordHasher.cs`), sesión persistida con `SecureStorage` de MAUI, y `AuthenticationStateProvider` propio integrado con `[Authorize]`/`AuthorizeRouteView` de Blazor.
-- **Cuenta demo** creada automáticamente al primer arranque: usuario `demo`, contraseña `Demo123!` (ver `Infrastructure/Persistence/DbInitializer.cs`).
-- **Persistencia local en SQLite** vía EF Core: CRUD completo de tareas (`Pages/Todos.razor`) aislado por usuario logueado.
-- **Ejemplo de consumo de Web Service (REST)**: `Pages/Posts.razor` hace `GET`/`POST` contra `https://jsonplaceholder.typicode.com` usando `HttpClient` tipado registrado con `IHttpClientFactory` (`Infrastructure/Http/PostsApiService.cs`). Cambia la `BaseAddress` en `Infrastructure/DependencyInjection.cs` por tu propia API.
-- **Toda la UI en MudBlazor**: `MudLayout`, `MudAppBar`, `MudDrawer`, `MudNavMenu`, `MudForm`, `MudTextField`, `MudTable`, `MudList`, `MudSnackbar`, `MudDialogProvider`, tema claro/oscuro (`App.razor`).
+- **Login real** contra el Web Service (`POST validarUsuario`), con los mismos DTOs/JSON que la app Android (`WsLoginDTO`, `WsResultDTO`, `ConfiguracionDTO`).
+- **Persistencia en SQLite compatible con Android**: tabla `usuario` con las mismas columnas (`asCodigoUsuario`, `vendedor`, `nombre`, `passW`, `sesionActiva`, `ultimaSincronizacion`).
+- **Sesión persistida y recuperada al reabrir la app** (pantalla de arranque `Splash.razor` que verifica la sesión antes de mostrar Login o la App).
+- **Logout** = elimina la fila de sesión activa en `usuario` (no borra catálogos ni otros datos).
+- **Login y Aplicación con navegación totalmente independiente**: menú de 3 puntos exclusivo del login (`LoginLayout.razor`) vs. barra de navegación inferior exclusiva de la app (`MainLayout.razor`).
+- **Tema claro/oscuro global** persistido entre sesiones (`ThemeState` + `IPreferencesService`), paleta basada en Industria La Popular.
+- **Variantes** (`Preventa`/`Autoventa`/`Despachos`) resueltas en compilación vía propiedad MSBuild `AppVariant`, sin tocar Razor.
+- **Orientación vertical forzada** (Android/iOS/MacCatalyst).
+- **Toda la UI en MudBlazor**, sin emojis.
 
 ## Puesta en marcha
 
@@ -71,9 +74,10 @@ dotnet test tests/SistemaILP.Ruteo.Application.Tests
 |----------------------------------------------|-------------------------------------------------------------------------------|
 | Agregar una entidad nueva                     | `Domain/Entities`, su `IEntityTypeConfiguration` en `Infrastructure/Persistence/Configurations`, y añadir el `DbSet` en `AppDbContext` |
 | Agregar un caso de uso / servicio             | Interfaz en `Application/Interfaces`, implementación en `Application/Services`, registro en `Application/DependencyInjection.cs` |
-| Consumir otro Web Service                     | Nueva interfaz + implementación siguiendo el patrón de `IPostsApiService`/`PostsApiService`, registrar con `AddHttpClient<TInterfaz, TImpl>()` en `Infrastructure/DependencyInjection.cs` |
+| Consumir otro Web Service                     | Nueva interfaz + implementación siguiendo el patrón de `ILoginWebServiceClient`/`LoginWebServiceClient`, registrar con `AddHttpClient<TInterfaz, TImpl>()` en `Infrastructure/DependencyInjection.cs` |
 | Agregar una página                            | `.razor` en `UI/Pages`, usando componentes `Mud*`; protégela con `@attribute [Authorize]` si requiere sesión |
-| Cambiar la ruta del archivo SQLite            | `MauiProgram.cs` (`dbPath`) |
+| Cambiar la Base URL / la variante             | `MauiProgram.BuildAppConfiguration()` (Base URL real pendiente de configurar) y propiedad MSBuild `AppVariant` en `SistemaILP.Ruteo.Maui.csproj` |
+| Cambiar la ruta/nombre de la base de datos    | `MauiProgram.BuildAppConfiguration()` (`DatabaseConfiguration`) |
 
 ## Solución de problemas (Windows)
 
@@ -93,8 +97,11 @@ Windows limita la longitud total de una ruta a 260 caracteres, y las carpetas `o
 **Errores "No se puede encontrar ... `.GeneratedMSBuildEditorConfig.editorconfig`"**
 Son un efecto secundario de los dos problemas anteriores (el `obj/` nunca se generó porque falló el restore/workload, o la ruta era demasiado larga). Se resuelven solos al aplicar los dos puntos anteriores; si persisten, borra las carpetas `obj/` y `bin/` de cada proyecto y vuelve a restaurar (`dotnet restore` o *Clean Solution* + *Restore NuGet Packages* en Visual Studio).
 
-## Notas de seguridad
+## Pendiente de configurar
 
-- Las contraseñas nunca se guardan en texto plano: se derivan con PBKDF2-SHA256 (100 000 iteraciones) y salt aleatorio por usuario.
-- La sesión (id del usuario logueado) se guarda con `SecureStorage` de MAUI (Keychain/KeyStore/DPAPI según la plataforma), no en `Preferences` ni en texto plano.
-- El ejemplo de Web Service usa una API pública de pruebas (jsonplaceholder) sin autenticación; si tu backend requiere tokens, añade el header `Authorization` en el `AddHttpClient` correspondiente.
+- **Base URL real del Web Service**: `MauiProgram.BuildAppConfiguration()` tiene un placeholder obvio (`https://pendiente-configurar-base-url.example/api/`) que hay que reemplazar antes de poder loguear de verdad.
+
+## Notas
+
+- La contraseña se guarda tal cual la envía el usuario (texto plano) en la columna `passW` de la tabla `usuario` - es el mismo comportamiento de la app Android existente, replicado literalmente en esta migración (no es una decisión de seguridad de este proyecto).
+- El campo `imei` del login está temporalmente hardcodeado a `"000000000000000"`, igual que en el código Android actual (comentario original: "mientras no se tengan los dispositivos disponibles").

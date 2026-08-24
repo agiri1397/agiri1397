@@ -1,131 +1,151 @@
+using SistemaILP.Ruteo.Application.Common;
 using SistemaILP.Ruteo.Application.DTOs;
 using SistemaILP.Ruteo.Application.Interfaces;
 using SistemaILP.Ruteo.Application.Services;
 using SistemaILP.Ruteo.Domain.Entities;
-using SistemaILP.Ruteo.Infrastructure.Security;
 using Xunit;
 
 namespace SistemaILP.Ruteo.Application.Tests;
 
 public class AuthServiceTests
 {
-    private static AuthService CreateSut(out InMemoryUserRepository userRepository, out InMemorySecureStorage secureStorage)
+    [Fact]
+    public async Task LoginAsync_Successful_CreatesActiveSession()
     {
-        userRepository = new InMemoryUserRepository();
-        secureStorage = new InMemorySecureStorage();
-        return new AuthService(userRepository, new PasswordHasher(), secureStorage, new NoOpAuthStateNotifier());
+        var repo = new InMemoryUsuarioRepository();
+        var wsClient = new FakeLoginWebServiceClient
+        {
+            Response = new WsLoginResultDto
+            {
+                Resultado = 1,
+                Configuracion = new ConfiguracionDto { CodigoVendedor = "V001", NombreVendedor = "Alice" }
+            }
+        };
+        var sut = new AuthService(wsClient, repo, new NoOpAuthStateNotifier());
+
+        var result = await sut.LoginAsync(new LoginCredentialsDto { Usuario = "alice", Password = "secret" });
+
+        Assert.True(result.Succeeded);
+        Assert.Equal("Alice", result.Data!.Nombre);
+
+        var sesion = await repo.GetSesionActivaAsync();
+        Assert.NotNull(sesion);
+        Assert.Equal("alice", sesion!.AsCodigoUsuario);
+        Assert.True(sesion.SesionActiva);
     }
 
     [Fact]
-    public async Task Register_Then_Login_Succeeds()
+    public async Task LoginAsync_ServerRejects_ReturnsFailureAndNoSession()
     {
-        var sut = CreateSut(out _, out _);
-
-        var registerResult = await sut.RegisterAsync(new RegisterRequestDto
+        var repo = new InMemoryUsuarioRepository();
+        var wsClient = new FakeLoginWebServiceClient
         {
-            UserName = "alice",
-            Email = "alice@example.com",
-            DisplayName = "Alice",
-            Password = "S3curePass"
-        });
+            Response = new WsLoginResultDto { Resultado = 0, Mensaje = "Usuario o contraseña incorrectos" }
+        };
+        var sut = new AuthService(wsClient, repo, new NoOpAuthStateNotifier());
 
-        Assert.True(registerResult.Succeeded);
-
-        await sut.LogoutAsync();
-
-        var loginResult = await sut.LoginAsync(new LoginRequestDto
-        {
-            UserNameOrEmail = "alice",
-            Password = "S3curePass"
-        });
-
-        Assert.True(loginResult.Succeeded);
-        Assert.Equal("alice", loginResult.Data!.UserName);
-    }
-
-    [Fact]
-    public async Task Login_With_Wrong_Password_Fails()
-    {
-        var sut = CreateSut(out _, out _);
-
-        await sut.RegisterAsync(new RegisterRequestDto
-        {
-            UserName = "bob",
-            Email = "bob@example.com",
-            Password = "CorrectPass1"
-        });
-
-        await sut.LogoutAsync();
-
-        var result = await sut.LoginAsync(new LoginRequestDto
-        {
-            UserNameOrEmail = "bob",
-            Password = "WrongPassword"
-        });
+        var result = await sut.LoginAsync(new LoginCredentialsDto { Usuario = "bob", Password = "wrong" });
 
         Assert.False(result.Succeeded);
+        Assert.Equal("Usuario o contraseña incorrectos", result.Error);
+        Assert.Null(await repo.GetSesionActivaAsync());
     }
 
     [Fact]
-    public async Task Register_With_Duplicate_UserName_Fails()
+    public async Task LoginAsync_ExistingUser_UpdatesDataButKeepsStoredPassword()
     {
-        var sut = CreateSut(out _, out _);
-
-        await sut.RegisterAsync(new RegisterRequestDto
+        // Replica el comportamiento real de Android (LoginService.mangeSuccessfullLogin):
+        // un login exitoso de un usuario ya existente NO sobreescribe su contraseña.
+        var repo = new InMemoryUsuarioRepository();
+        await repo.UpsertAsync(new Usuario
         {
-            UserName = "carol",
-            Email = "carol1@example.com",
-            Password = "Password1"
+            AsCodigoUsuario = "carol",
+            PassW = "original-password",
+            Vendedor = "OLD",
+            Nombre = "Nombre Viejo",
+            SesionActiva = false
         });
 
-        var duplicate = await sut.RegisterAsync(new RegisterRequestDto
+        var wsClient = new FakeLoginWebServiceClient
         {
-            UserName = "carol",
-            Email = "carol2@example.com",
-            Password = "Password2"
-        });
+            Response = new WsLoginResultDto
+            {
+                Resultado = 1,
+                Configuracion = new ConfiguracionDto { CodigoVendedor = "V999", NombreVendedor = "Carol Actualizada" }
+            }
+        };
+        var sut = new AuthService(wsClient, repo, new NoOpAuthStateNotifier());
 
-        Assert.False(duplicate.Succeeded);
+        var result = await sut.LoginAsync(new LoginCredentialsDto { Usuario = "carol", Password = "lo-que-tipeo" });
+
+        Assert.True(result.Succeeded);
+
+        var sesion = await repo.GetByCodigoUsuarioAsync("carol");
+        Assert.NotNull(sesion);
+        Assert.Equal("original-password", sesion!.PassW);
+        Assert.Equal("V999", sesion.Vendedor);
+        Assert.Equal("Carol Actualizada", sesion.Nombre);
+        Assert.True(sesion.SesionActiva);
     }
 
-    private class InMemoryUserRepository : IUserRepository
+    [Fact]
+    public async Task LogoutAsync_DeletesActiveSessionRow()
     {
-        private readonly List<User> _users = new();
+        var repo = new InMemoryUsuarioRepository();
+        await repo.UpsertAsync(new Usuario
+        {
+            AsCodigoUsuario = "dave",
+            PassW = "x",
+            Vendedor = "V1",
+            Nombre = "Dave",
+            SesionActiva = true
+        });
+
+        var sut = new AuthService(new FakeLoginWebServiceClient(), repo, new NoOpAuthStateNotifier());
+
+        var result = await sut.LogoutAsync();
+
+        Assert.True(result.Succeeded);
+        Assert.Null(await repo.GetSesionActivaAsync());
+    }
+
+    private class FakeLoginWebServiceClient : ILoginWebServiceClient
+    {
+        public WsLoginResultDto? Response { get; set; }
+
+        public Task<Result<WsLoginResultDto>> LoginAsync(WsLoginRequestDto request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Response is null
+                ? Result<WsLoginResultDto>.Failure("No configurado")
+                : Result<WsLoginResultDto>.Success(Response));
+    }
+
+    private class InMemoryUsuarioRepository : IUsuarioRepository
+    {
+        private readonly List<Usuario> _usuarios = new();
         private int _nextId = 1;
 
-        public Task<User?> GetByIdAsync(int id) =>
-            Task.FromResult(_users.FirstOrDefault(u => u.Id == id));
+        public Task<Usuario?> GetByCodigoUsuarioAsync(string asCodigoUsuario) =>
+            Task.FromResult(_usuarios.FirstOrDefault(u => u.AsCodigoUsuario == asCodigoUsuario));
 
-        public Task<User?> GetByUserNameOrEmailAsync(string userNameOrEmail) =>
-            Task.FromResult(_users.FirstOrDefault(u => u.UserName == userNameOrEmail || u.Email == userNameOrEmail));
+        public Task<Usuario?> GetSesionActivaAsync() =>
+            Task.FromResult(_usuarios.FirstOrDefault(u => u.SesionActiva));
 
-        public Task<bool> ExistsAsync(string userName, string email) =>
-            Task.FromResult(_users.Any(u => u.UserName == userName || u.Email == email));
-
-        public Task<User> AddAsync(User user)
+        public Task UpsertAsync(Usuario usuario)
         {
-            user.Id = _nextId++;
-            _users.Add(user);
-            return Task.FromResult(user);
-        }
+            if (usuario.Id == 0)
+            {
+                usuario.Id = _nextId++;
+                _usuarios.Add(usuario);
+            }
 
-        public Task UpdateAsync(User user) => Task.CompletedTask;
-    }
-
-    private class InMemorySecureStorage : ISecureStorageService
-    {
-        private readonly Dictionary<string, string> _store = new();
-
-        public Task SetAsync(string key, string value)
-        {
-            _store[key] = value;
             return Task.CompletedTask;
         }
 
-        public Task<string?> GetAsync(string key) =>
-            Task.FromResult(_store.TryGetValue(key, out var value) ? value : null);
-
-        public void Remove(string key) => _store.Remove(key);
+        public Task DeleteAsync(string asCodigoUsuario)
+        {
+            _usuarios.RemoveAll(u => u.AsCodigoUsuario == asCodigoUsuario);
+            return Task.CompletedTask;
+        }
     }
 
     private class NoOpAuthStateNotifier : IAuthStateNotifier

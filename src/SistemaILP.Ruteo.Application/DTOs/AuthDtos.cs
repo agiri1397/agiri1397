@@ -1,30 +1,22 @@
 namespace SistemaILP.Ruteo.Application.DTOs;
 
-public class LoginRequestDto
+/// <summary>Credenciales capturadas en el formulario de login.</summary>
+public class LoginCredentialsDto
 {
-    public string UserNameOrEmail { get; set; } = string.Empty;
+    public string Usuario { get; set; } = string.Empty;
 
     public string Password { get; set; } = string.Empty;
 }
 
-public class RegisterRequestDto
+/// <summary>
+/// Sesion activa expuesta a la UI (proyeccion de la fila de la tabla
+/// "usuario" que representa al vendedor actualmente logueado).
+/// </summary>
+public class SesionUsuarioDto
 {
-    public string UserName { get; set; } = string.Empty;
+    public string AsCodigoUsuario { get; set; } = string.Empty;
 
-    public string Email { get; set; } = string.Empty;
+    public string Vendedor { get; set; } = string.Empty;
 
-    public string DisplayName { get; set; } = string.Empty;
-
-    public string Password { get; set; } = string.Empty;
-}
-
-public class CurrentUserDto
-{
-    public int Id { get; set; }
-
-    public string UserName { get; set; } = string.Empty;
-
-    public string Email { get; set; } = string.Empty;
-
-    public string DisplayName { get; set; } = string.Empty;
+    public string Nombre { get; set; } = string.Empty;
 }
