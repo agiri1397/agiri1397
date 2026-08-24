@@ -1,6 +1,7 @@
 @page "/"
 @attribute [AllowAnonymous]
 @layout Layout.SplashLayout
+@inject DatabaseStartupState DatabaseStartupState
 @inject IDbInitializer DbInitializer
 @inject IAuthService AuthService
 @inject NavigationManager NavigationManager
@@ -13,7 +14,7 @@
     <MudAlert Severity="Severity.Error" Class="mb-4" Style="max-width: 360px;">
         No fue posible iniciar la aplicación. Verifique su almacenamiento disponible e inténtelo nuevamente.
     </MudAlert>
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="IniciarAsync">
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ReintentarAsync">
         Reintentar
     </MudButton>
 }
@@ -28,26 +29,39 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await IniciarAsync();
+        // La base de datos ya se inicializo (o fallo) de forma bloqueante
+        // en MauiProgram, antes de que este componente (o cualquier otro)
+        // se renderizara - ver DatabaseStartupState. Aqui solo se lee ese
+        // resultado; no se vuelve a inicializar salvo que el usuario
+        // pulse "Reintentar".
+        if (!DatabaseStartupState.Succeeded)
+        {
+            _hasError = true;
+            return;
+        }
+
+        await ContinuarAsync();
     }
 
-    private async Task IniciarAsync()
+    private async Task ContinuarAsync()
     {
-        _hasError = false;
+        var sesion = await AuthService.GetCurrentSessionAsync();
+        NavigationManager.NavigateTo(sesion is not null ? "/inicio" : "/login", forceLoad: true);
+    }
 
+    private async Task ReintentarAsync()
+    {
         try
         {
-            // Seccion 46: si la BD no puede abrirse, NO se asume "sin
-            // sesion" - se detiene el arranque y se ofrece reintentar.
             await DbInitializer.InitializeAsync();
+            DatabaseStartupState.Succeeded = true;
+            _hasError = false;
 
-            var sesion = await AuthService.GetCurrentSessionAsync();
-
-            NavigationManager.NavigateTo(sesion is not null ? "/inicio" : "/login", forceLoad: true);
+            await ContinuarAsync();
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Fallo al inicializar la base de datos local durante el arranque.");
+            Logger.LogError(ex, "Fallo al reintentar inicializar la base de datos local.");
             _hasError = true;
         }
     }

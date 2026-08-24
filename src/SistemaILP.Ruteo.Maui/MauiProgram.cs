@@ -1,5 +1,6 @@
 using SistemaILP.Ruteo.Application;
 using SistemaILP.Ruteo.Application.Configuration;
+using SistemaILP.Ruteo.Application.Services;
 using SistemaILP.Ruteo.Infrastructure;
 using SistemaILP.Ruteo.Maui.Services;
 using SistemaILP.Ruteo.Application.Interfaces;
@@ -29,19 +30,44 @@ public static class MauiProgram
         builder.Services.AddInfrastructure(appConfiguration);
         builder.Services.AddSingleton<IPreferencesService, MauiPreferencesService>();
         builder.Services.AddSingleton<ThemeState>();
+        builder.Services.AddSingleton<DatabaseStartupState>();
 
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
         builder.Logging.AddDebug();
 #endif
 
-        // A proposito NO se inicializa la base de datos aqui de forma
-        // bloqueante: si la BD no puede abrirse, este seria el punto en
-        // el que la app crashearia antes de mostrar ninguna UI. En vez de
-        // eso, Splash.razor la inicializa de forma asincrona al arrancar
-        // y maneja el error mostrando un mensaje con reintentar (ver
-        // seccion 45/46 de los requerimientos).
-        return builder.Build();
+        var app = builder.Build();
+
+        // El esquema DEBE existir antes de que se renderice cualquier
+        // componente Razor: CascadingAuthenticationState consulta la
+        // tabla "usuario" (via CustomAuthenticationStateProvider) apenas
+        // arranca el arbol de componentes, sin esperar a que Splash.razor
+        // termine su propia inicializacion - si se hace de forma
+        // asincrona/diferida, hay una condicion de carrera real. Por eso
+        // se hace aqui, bloqueante, ANTES de devolver la app. Si falla, NO
+        // se relanza la excepcion (eso crashearia la app antes de mostrar
+        // cualquier UI): se guarda el resultado en DatabaseStartupState y
+        // Splash.razor decide que mostrar (ver seccion 45/46).
+        using (var scope = app.Services.CreateScope())
+        {
+            var dbInitializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
+            var startupState = scope.ServiceProvider.GetRequiredService<DatabaseStartupState>();
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<App>>();
+
+            try
+            {
+                dbInitializer.InitializeAsync().GetAwaiter().GetResult();
+                startupState.Succeeded = true;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Fallo al inicializar la base de datos local durante el arranque.");
+                startupState.Succeeded = false;
+            }
+        }
+
+        return app;
     }
 
     private static AppVariant ResolveVariant()
