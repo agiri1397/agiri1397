@@ -1,0 +1,137 @@
+@page "/"
+@attribute [Authorize]
+@inject ITodoService TodoService
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h4" Class="mb-1">Mis tareas</MudText>
+<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">
+    Ejemplo de persistencia local con SQLite (Entity Framework Core), aislado por usuario.
+</MudText>
+
+<MudPaper Class="pa-4 mb-6" Elevation="2">
+    <MudGrid AlignItems="Center">
+        <MudItem xs="12" sm="6">
+            <MudTextField T="string" Label="Nueva tarea" @bind-Value="_newTitle" Immediate="true" />
+        </MudItem>
+        <MudItem xs="12" sm="4">
+            <MudTextField T="string" Label="Notas (opcional)" @bind-Value="_newNotes" Immediate="true" />
+        </MudItem>
+        <MudItem xs="12" sm="2" Class="d-flex justify-end">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       FullWidth="true"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="@(string.IsNullOrWhiteSpace(_newTitle) || _isBusy)"
+                       OnClick="AddAsync">
+                Agregar
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@if (_isLoading)
+{
+    <MudProgressCircular Indeterminate="true" Class="d-block mx-auto" />
+}
+else if (_todos.Count == 0)
+{
+    <MudAlert Severity="Severity.Info">Todavía no tienes tareas. ¡Agrega la primera!</MudAlert>
+}
+else
+{
+    <MudList T="TodoItemDto" Clickable="false">
+        @foreach (var todo in _todos)
+        {
+            <MudListItem T="TodoItemDto">
+                <div class="d-flex align-center" style="gap: 12px;">
+                    <MudCheckBox T="bool"
+                                 Value="todo.IsCompleted"
+                                 ValueChanged="@(_ => ToggleAsync(todo))"
+                                 Color="Color.Primary" />
+                    <div class="flex-grow-1">
+                        <MudText Typo="Typo.body1" Style="@(todo.IsCompleted ? "text-decoration: line-through;" : null)">
+                            @todo.Title
+                        </MudText>
+                        @if (!string.IsNullOrWhiteSpace(todo.Notes))
+                        {
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@todo.Notes</MudText>
+                        }
+                    </div>
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                    Color="Color.Error"
+                                    Size="Size.Small"
+                                    OnClick="@(() => DeleteAsync(todo))" />
+                </div>
+            </MudListItem>
+            <MudDivider />
+        }
+    </MudList>
+}
+
+@code {
+    private List<TodoItemDto> _todos = new();
+    private bool _isLoading = true;
+    private bool _isBusy;
+    private string _newTitle = string.Empty;
+    private string? _newNotes;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _todos = await TodoService.GetMyTodosAsync();
+        _isLoading = false;
+    }
+
+    private async Task AddAsync()
+    {
+        _isBusy = true;
+
+        var result = await TodoService.SaveAsync(new SaveTodoItemDto
+        {
+            Title = _newTitle,
+            Notes = _newNotes
+        });
+
+        _isBusy = false;
+
+        if (!result.Succeeded)
+        {
+            Snackbar.Add(result.Error, Severity.Error);
+            return;
+        }
+
+        _newTitle = string.Empty;
+        _newNotes = null;
+        await LoadAsync();
+    }
+
+    private async Task ToggleAsync(TodoItemDto todo)
+    {
+        var result = await TodoService.ToggleCompletedAsync(todo.Id);
+        if (!result.Succeeded)
+        {
+            Snackbar.Add(result.Error, Severity.Error);
+            return;
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task DeleteAsync(TodoItemDto todo)
+    {
+        var result = await TodoService.DeleteAsync(todo.Id);
+        if (!result.Succeeded)
+        {
+            Snackbar.Add(result.Error, Severity.Error);
+            return;
+        }
+
+        Snackbar.Add("Tarea eliminada", Severity.Success);
+        await LoadAsync();
+    }
+}

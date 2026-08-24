@@ -1,0 +1,123 @@
+@page "/posts"
+@attribute [Authorize]
+@inject IPostsApiService PostsApiService
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h4" Class="mb-1">Posts (Web Service)</MudText>
+<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">
+    Ejemplo de consumo de una API REST remota (GET/POST) con HttpClient e IHttpClientFactory.
+</MudText>
+
+<MudPaper Class="pa-4 mb-6" Elevation="2">
+    <MudGrid AlignItems="Center">
+        <MudItem xs="12" sm="5">
+            <MudTextField T="string" Label="Título" @bind-Value="_newTitle" Immediate="true" />
+        </MudItem>
+        <MudItem xs="12" sm="5">
+            <MudTextField T="string" Label="Contenido" @bind-Value="_newBody" Immediate="true" />
+        </MudItem>
+        <MudItem xs="12" sm="2" Class="d-flex justify-end">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       FullWidth="true"
+                       StartIcon="@Icons.Material.Filled.CloudUpload"
+                       Disabled="@(string.IsNullOrWhiteSpace(_newTitle) || _isSending)"
+                       OnClick="CreatePostAsync">
+                Enviar (POST)
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+<div class="d-flex align-center mb-4">
+    <MudButton Variant="Variant.Outlined"
+               StartIcon="@Icons.Material.Filled.Refresh"
+               OnClick="LoadAsync"
+               Disabled="_isLoading">
+        Recargar (GET)
+    </MudButton>
+</div>
+
+@if (_isLoading)
+{
+    <MudProgressCircular Indeterminate="true" Class="d-block mx-auto" />
+}
+else if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <MudAlert Severity="Severity.Error">@_errorMessage</MudAlert>
+}
+else
+{
+    <MudTable Items="_posts" Hover="true" Dense="true" Striped="true" FixedHeader="true" Height="480px">
+        <HeaderContent>
+            <MudTh>ID</MudTh>
+            <MudTh>Usuario</MudTh>
+            <MudTh>Título</MudTh>
+            <MudTh>Contenido</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="ID">@context.Id</MudTd>
+            <MudTd DataLabel="Usuario">@context.UserId</MudTd>
+            <MudTd DataLabel="Título">@context.Title</MudTd>
+            <MudTd DataLabel="Contenido">@context.Body</MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@code {
+    private List<PostDto> _posts = new();
+    private bool _isLoading = true;
+    private bool _isSending;
+    private string? _errorMessage;
+
+    private string _newTitle = string.Empty;
+    private string _newBody = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        var result = await PostsApiService.GetPostsAsync();
+
+        if (result.Succeeded)
+        {
+            _posts = result.Data!;
+        }
+        else
+        {
+            _errorMessage = result.Error;
+        }
+
+        _isLoading = false;
+    }
+
+    private async Task CreatePostAsync()
+    {
+        _isSending = true;
+
+        var result = await PostsApiService.CreatePostAsync(new PostDto
+        {
+            UserId = 1,
+            Title = _newTitle,
+            Body = _newBody
+        });
+
+        _isSending = false;
+
+        if (!result.Succeeded)
+        {
+            Snackbar.Add(result.Error, Severity.Error);
+            return;
+        }
+
+        Snackbar.Add($"Post creado por el servicio con id {result.Data!.Id}", Severity.Success);
+        _newTitle = string.Empty;
+        _newBody = string.Empty;
+    }
+}
