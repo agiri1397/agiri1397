@@ -1,3 +1,4 @@
+@page "/"
 @page "/login"
 @attribute [AllowAnonymous]
 @layout Layout.LoginLayout
@@ -65,6 +66,18 @@
     private InputType _passwordInput = InputType.Password;
     private string _passwordAdornmentIcon = Icons.Material.Filled.VisibilityOff;
 
+    protected override async Task OnInitializedAsync()
+    {
+        // "/" is this page, so an already-authenticated user landing here
+        // (app relaunch with a saved session) needs to be sent straight to
+        // the app instead of seeing the login form again.
+        var currentUser = await AuthService.GetCurrentUserAsync();
+        if (currentUser is not null)
+        {
+            NavigationManager.NavigateTo("/todos", forceLoad: true);
+        }
+    }
+
     private void TogglePasswordVisibility()
     {
         _passwordVisible = !_passwordVisible;
@@ -94,6 +107,6 @@
         }
 
         Snackbar.Add($"Bienvenido, {result.Data!.DisplayName}", Severity.Success);
-        NavigationManager.NavigateTo("/", forceLoad: true);
+        NavigationManager.NavigateTo("/todos", forceLoad: true);
     }
 }
