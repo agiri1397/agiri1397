@@ -1,0 +1,68 @@
+@page "/"
+@attribute [AllowAnonymous]
+@layout Layout.SplashLayout
+@inject DatabaseStartupState DatabaseStartupState
+@inject IDbInitializer DbInitializer
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+@inject ILogger<Splash> Logger
+
+<img src="images/logo-la-popular.svg" alt="La Popular" style="width: 180px; max-width: 70%; height: auto;" class="mb-8" />
+
+@if (_hasError)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4" Style="max-width: 360px;">
+        No fue posible iniciar la aplicación. Verifique su almacenamiento disponible e inténtelo nuevamente.
+    </MudAlert>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ReintentarAsync">
+        Reintentar
+    </MudButton>
+}
+else
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mb-4" />
+    <MudText Typo="Typo.body2" Color="Color.Secondary">Verificando sesión…</MudText>
+}
+
+@code {
+    private bool _hasError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // La base de datos ya se inicializo (o fallo) de forma bloqueante
+        // en MauiProgram, antes de que este componente (o cualquier otro)
+        // se renderizara - ver DatabaseStartupState. Aqui solo se lee ese
+        // resultado; no se vuelve a inicializar salvo que el usuario
+        // pulse "Reintentar".
+        if (!DatabaseStartupState.Succeeded)
+        {
+            _hasError = true;
+            return;
+        }
+
+        await ContinuarAsync();
+    }
+
+    private async Task ContinuarAsync()
+    {
+        var sesion = await AuthService.GetCurrentSessionAsync();
+        NavigationManager.NavigateTo(sesion is not null ? "/inicio" : "/login", forceLoad: true);
+    }
+
+    private async Task ReintentarAsync()
+    {
+        try
+        {
+            await DbInitializer.InitializeAsync();
+            DatabaseStartupState.Succeeded = true;
+            _hasError = false;
+
+            await ContinuarAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Fallo al reintentar inicializar la base de datos local.");
+            _hasError = true;
+        }
+    }
+}

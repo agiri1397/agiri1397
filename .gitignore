@@ -1,0 +1,43 @@
+## .NET / MAUI
+bin/
+obj/
+*.user
+*.userosscache
+*.sln.docstates
+
+## Visual Studio / Rider / VS Code
+.vs/
+.vscode/
+.idea/
+*.suo
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]uild/
+[Bb]in/
+[Oo]bj/
+
+## Test results
+TestResults/
+*.trx
+
+## SQLite local databases
+*.db
+*.db3
+*.sqlite
+*.sqlite3
+
+## macOS / Windows junk
+.DS_Store
+Thumbs.db
+
+## NuGet
+*.nupkg
+**/packages/*
+!**/packages/build/
+project.lock.json
+project.fragment.lock.json
+artifacts/

@@ -1,0 +1,37 @@
+@page "/perfil"
+@attribute [Authorize]
+@inject IAuthService AuthService
+
+<MudText Typo="Typo.h4" Class="mb-6">Perfil</MudText>
+
+@if (_sesion is null)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else
+{
+    <MudCard>
+        <MudCardContent>
+            <div class="d-flex align-center mb-4" style="gap: 16px;">
+                <MudAvatar Color="Color.Primary" Size="Size.Large">
+                    @(_sesion.Nombre.Length > 0 ? _sesion.Nombre[0].ToString().ToUpperInvariant() : "?")
+                </MudAvatar>
+                <div>
+                    <MudText Typo="Typo.h6">@_sesion.Nombre</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@@@_sesion.AsCodigoUsuario</MudText>
+                </div>
+            </div>
+            <MudDivider Class="mb-4" />
+            <MudText Typo="Typo.body1"><b>Código de vendedor:</b> @_sesion.Vendedor</MudText>
+        </MudCardContent>
+    </MudCard>
+}
+
+@code {
+    private SesionUsuarioDto? _sesion;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _sesion = await AuthService.GetCurrentSessionAsync();
+    }
+}

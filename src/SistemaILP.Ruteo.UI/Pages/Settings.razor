@@ -1,0 +1,94 @@
+@page "/configuracion"
+@attribute [Authorize]
+@inject ThemeState ThemeState
+@inject IConnectionSettingsService ConnectionSettings
+@inject IPreferencesService PreferencesService
+@inject IDialogService DialogService
+
+<MudText Typo="Typo.h4" Class="mb-6">Configuración</MudText>
+
+<MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="mb-2">Apariencia</MudText>
+<MudPaper Class="pa-4 mb-6">
+    <MudSwitch T="bool"
+               Value="ThemeState.IsDarkMode"
+               ValueChanged="@(v => ThemeState.IsDarkMode = v)"
+               Color="Color.Primary"
+               Label="Modo oscuro" />
+</MudPaper>
+
+<MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="mb-2">Sincronización</MudText>
+<MudPaper Class="pa-4 mb-6">
+    <MudSelect T="int" Value="_frecuenciaHoras" ValueChanged="OnFrecuenciaChanged" Label="Frecuencia de sincronización" Variant="Variant.Outlined">
+        <MudSelectItem T="int" Value="1">1 hora</MudSelectItem>
+        <MudSelectItem T="int" Value="3">3 horas</MudSelectItem>
+        <MudSelectItem T="int" Value="6">6 horas</MudSelectItem>
+        <MudSelectItem T="int" Value="12">12 horas</MudSelectItem>
+        <MudSelectItem T="int" Value="24">24 horas</MudSelectItem>
+    </MudSelect>
+</MudPaper>
+
+<MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="mb-2">Conexión</MudText>
+<MudPaper Class="pa-4 mb-6">
+    <div class="d-flex align-center justify-space-between" style="gap: 12px;">
+        <div>
+            <MudText Typo="Typo.body1">Servidor</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Style="word-break: break-all;">@_baseUrl</MudText>
+        </div>
+        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                        Color="Color.Primary"
+                        OnClick="EditarConexionAsync"
+                        title="Editar conexión"
+                        aria-label="Editar conexión" />
+    </div>
+</MudPaper>
+
+<MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="mb-2">Acerca de</MudText>
+<MudPaper Class="pa-4">
+    <div class="d-flex align-center justify-space-between" style="gap: 12px; cursor: pointer;" @onclick="MostrarInfoAsync">
+        <MudText Typo="Typo.body1">Información de la aplicación</MudText>
+        <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Color="Color.Secondary" />
+    </div>
+</MudPaper>
+
+@code {
+    // Preferencia de UI unicamente: todavia no existe un motor de
+    // sincronizacion real que la consuma - se deja la estructura lista
+    // para cuando se implemente ese modulo.
+    private const string SyncFrequencyPreferenceKey = "sync_frequency_hours";
+
+    private string _baseUrl = string.Empty;
+    private int _frecuenciaHoras = 3;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _baseUrl = await ConnectionSettings.GetBaseUrlAsync();
+
+        var stored = PreferencesService.Get(SyncFrequencyPreferenceKey);
+        if (int.TryParse(stored, out var horas))
+        {
+            _frecuenciaHoras = horas;
+        }
+    }
+
+    private void OnFrecuenciaChanged(int horas)
+    {
+        _frecuenciaHoras = horas;
+        PreferencesService.Set(SyncFrequencyPreferenceKey, horas.ToString());
+    }
+
+    private async Task EditarConexionAsync()
+    {
+        var dialogReference = await DialogService.ShowAsync<EditConnectionDialog>("Editar conexión");
+        var result = await dialogReference.Result;
+
+        if (result is not null && !result.Canceled)
+        {
+            _baseUrl = await ConnectionSettings.GetBaseUrlAsync();
+        }
+    }
+
+    private async Task MostrarInfoAsync()
+    {
+        await DialogService.ShowAsync<AppInfoDialog>("Información de la aplicación");
+    }
+}

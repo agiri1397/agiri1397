@@ -1,0 +1,112 @@
+@page "/login"
+@attribute [AllowAnonymous]
+@layout Layout.LoginLayout
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+@inject IMessageService MessageService
+
+<div class="d-flex justify-center mb-8">
+    <img src="images/logo-la-popular.svg" alt="La Popular" style="width: 220px; max-width: 80%; height: auto;" />
+</div>
+
+<MudForm @ref="_form" Model="_model" @bind-IsValid="_isValid">
+    <MudText Typo="Typo.subtitle2" Class="mb-1" Style="font-weight: 600;">
+        Usuario <span style="color: var(--mud-palette-error);">*</span>
+    </MudText>
+    <MudTextField T="string"
+                  @bind-Value="_model.Usuario"
+                  Placeholder="Ingrese su usuario"
+                  Variant="Variant.Outlined"
+                  Class="rounded-lg mb-4"
+                  Required="true"
+                  RequiredError="Este campo es obligatorio"
+                  Disabled="_isBusy"
+                  Immediate="true" />
+
+    <MudText Typo="Typo.subtitle2" Class="mb-1" Style="font-weight: 600;">
+        Contraseña <span style="color: var(--mud-palette-error);">*</span>
+    </MudText>
+    <MudTextField T="string"
+                  @bind-Value="_model.Password"
+                  Placeholder="Ingrese su contraseña"
+                  Variant="Variant.Outlined"
+                  Class="rounded-lg mb-2"
+                  InputType="@_passwordInput"
+                  Adornment="Adornment.End"
+                  AdornmentIcon="@_passwordAdornmentIcon"
+                  OnAdornmentClick="TogglePasswordVisibility"
+                  Required="true"
+                  RequiredError="Este campo es obligatorio"
+                  Disabled="_isBusy"
+                  Immediate="true" />
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <AppMessageAlert Type="_errorType" Title="_errorTitle" Text="_errorMessage" Class="mt-2 mb-2" />
+    }
+
+    <MudButton Variant="Variant.Filled"
+               FullWidth="true"
+               Disabled="@(!_isValid || _isBusy)"
+               OnClick="LoginAsync"
+               Class="btn-brand-gradient mt-4 py-3">
+        @if (_isBusy)
+        {
+            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+        }
+        Ingresar
+    </MudButton>
+</MudForm>
+
+@code {
+    private readonly LoginCredentialsDto _model = new();
+    private MudForm _form = null!;
+    private bool _isValid;
+    private bool _isBusy;
+    private string? _errorMessage;
+    private string? _errorTitle;
+    private MessageType _errorType = MessageType.Error;
+
+    private bool _passwordVisible;
+    private InputType _passwordInput = InputType.Password;
+    private string _passwordAdornmentIcon = Icons.Material.Filled.VisibilityOff;
+
+    private void TogglePasswordVisibility()
+    {
+        _passwordVisible = !_passwordVisible;
+        _passwordInput = _passwordVisible ? InputType.Text : InputType.Password;
+        _passwordAdornmentIcon = _passwordVisible ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff;
+    }
+
+    private async Task LoginAsync()
+    {
+        await _form.Validate();
+        if (!_isValid)
+        {
+            return;
+        }
+
+        _isBusy = true;
+
+        // Se limpia el mensaje del intento anterior antes de llamar al WS,
+        // para que nunca queden dos mensajes superpuestos ni un error
+        // viejo visible tras un intento nuevo (exitoso o no).
+        _errorMessage = null;
+        _errorTitle = null;
+
+        var result = await AuthService.LoginAsync(_model);
+
+        _isBusy = false;
+
+        if (!result.Succeeded)
+        {
+            _errorType = result.MessageType;
+            _errorTitle = result.ErrorTitle;
+            _errorMessage = result.Error;
+            return;
+        }
+
+        MessageService.ShowSuccess(MessageTexts.Login.SuccessMessage(result.Data!.Nombre), MessageTexts.Login.SuccessTitle);
+        NavigationManager.NavigateTo("/inicio", forceLoad: true);
+    }
+}

@@ -1,0 +1,99 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject NavigationManager NavigationManager
+@inject IAuthService AuthService
+@inject IMessageService MessageService
+
+<MudLayout>
+    <MudAppBar Elevation="1">
+        <MudText Typo="Typo.h6">SistemaILP.Ruteo</MudText>
+        <MudSpacer />
+        <MudIconButton Icon="@Icons.Material.Filled.Logout"
+                        Color="Color.Inherit"
+                        OnClick="LogoutAsync"
+                        title="Cerrar sesión"
+                        aria-label="Cerrar sesión" />
+    </MudAppBar>
+
+    <MudMainContent Class="pb-16">
+        <MudContainer MaxWidth="MaxWidth.Large" Class="my-6 pb-6">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+
+    @* Barra de navegación propia de la aplicación (independiente del menu
+       de 3 puntos del login). Siempre visible mientras hay sesion iniciada;
+       estilo de pestañas fijas abajo, familiar para apps como Facebook/WhatsApp. *@
+    <MudBottomNavigation Value="@((object)_selectedIndex)"
+                          ValueChanged="OnTabChanged"
+                          Color="Color.Primary"
+                          Fixed="true">
+        <MudBottomNavigationItem Icon="@Icons.Material.Filled.Home" Text="Inicio" />
+        <MudBottomNavigationItem Icon="@Icons.Material.Filled.Apps" Text="Módulos" />
+        <MudBottomNavigationItem Icon="@Icons.Material.Filled.Person" Text="Perfil" />
+        <MudBottomNavigationItem Icon="@Icons.Material.Filled.Settings" Text="Configuración" />
+    </MudBottomNavigation>
+</MudLayout>
+
+@code {
+    private static readonly string[] TabRoutes = { "/inicio", "/modulos", "/perfil", "/configuracion" };
+
+    private int _selectedIndex;
+
+    protected override void OnInitialized()
+    {
+        _selectedIndex = IndexForCurrentRoute();
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        var index = IndexForCurrentRoute();
+        if (index != _selectedIndex)
+        {
+            _selectedIndex = index;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private int IndexForCurrentRoute()
+    {
+        var path = new Uri(NavigationManager.Uri).AbsolutePath.TrimEnd('/');
+        var index = Array.IndexOf(TabRoutes, path);
+        return index >= 0 ? index : 0;
+    }
+
+    private void OnTabChanged(object value)
+    {
+        var index = Convert.ToInt32(value);
+        if (index < 0 || index >= TabRoutes.Length || index == _selectedIndex)
+        {
+            return;
+        }
+
+        _selectedIndex = index;
+        NavigationManager.NavigateTo(TabRoutes[index]);
+    }
+
+    private async Task LogoutAsync()
+    {
+        var result = await AuthService.LogoutAsync();
+
+        if (!result.Succeeded)
+        {
+            // No se oculta el error: si no se pudo limpiar la sesion en
+            // BD, la sesion sigue existiendo (se volveria a recuperar al
+            // reabrir la app), asi que NO navegamos al Login todavia -
+            // se deja al usuario reintentar.
+            MessageService.ShowError(result.Error!, result.ErrorTitle);
+            return;
+        }
+
+        NavigationManager.NavigateTo("/", forceLoad: true);
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+}

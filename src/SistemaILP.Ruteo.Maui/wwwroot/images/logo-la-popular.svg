@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 160" role="img" aria-label="La Popular">
+  <defs>
+    <linearGradient id="lp-blue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3E86D6" />
+      <stop offset="100%" stop-color="#1D5FA8" />
+    </linearGradient>
+    <linearGradient id="lp-orange" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F7B968" />
+      <stop offset="100%" stop-color="#E8863A" />
+    </linearGradient>
+  </defs>
+
+  <g font-family="'Segoe UI', system-ui, -apple-system, Roboto, sans-serif" text-anchor="middle">
+    <circle cx="154" cy="30" r="7" fill="url(#lp-orange)" />
+    <text x="180" y="52" font-size="34" font-weight="800" fill="url(#lp-blue)" letter-spacing="1">LP</text>
+
+    <text x="180" y="108" font-size="46" font-weight="800" fill="#1D5FA8">La Popular</text>
+
+    <text x="180" y="130" font-size="11" font-weight="600" fill="#1D5FA8" letter-spacing="2">
+      POR UN MUNDO LIMPIO, BELLO Y SALUDABLE
+    </text>
+  </g>
+</svg>

@@ -1,0 +1,44 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    /* Keeps the page background in sync with the active MudBlazor theme
+       (light/dark) even outside MudContainer's own bounds. */
+    background-color: var(--mud-palette-background, #F7F9FC);
+}
+
+#blazor-error-ui {
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}
+
+/* Primary call-to-action pill button, brand gradient (login "Ingresar",
+   reusable for other primary actions later). */
+.btn-brand-gradient {
+    background: linear-gradient(135deg, #F7B968 0%, #E8863A 100%) !important;
+    color: #FFFFFF !important;
+    border-radius: 999px !important;
+    box-shadow: 0 8px 20px rgba(232, 134, 58, 0.35) !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+    font-size: 1rem !important;
+}
+
+.btn-brand-gradient.mud-disabled {
+    background: #E0E0E0 !important;
+    box-shadow: none !important;
+    color: #9E9E9E !important;
+}

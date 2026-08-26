@@ -1,0 +1,46 @@
+@inherits LayoutComponentBase
+@inject ThemeState ThemeState
+@inject AppConfiguration AppConfiguration
+@inject IDialogService DialogService
+
+<div style="position: relative; min-height: 100vh; display: flex; flex-direction: column;">
+
+    @* Menu exclusivo del login. No es navegacion: solo configuracion
+       (tema, informacion de la app), y desaparece por completo una vez
+       autenticado porque este layout nunca se usa fuera de Login. *@
+    <div style="position: absolute; top: 12px; right: 12px; z-index: 10;">
+        <MudMenu Icon="@Icons.Material.Filled.MoreVert"
+                 Color="Color.Default"
+                 title="Opciones">
+            <MudMenuItem Icon="@(ThemeState.IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                         OnClick="ToggleTheme">
+                @(ThemeState.IsDarkMode ? "Modo claro" : "Modo oscuro")
+            </MudMenuItem>
+            <MudMenuItem Icon="@Icons.Material.Filled.Info" OnClick="MostrarInfoAsync">
+                Información de la aplicación
+            </MudMenuItem>
+        </MudMenu>
+    </div>
+
+    <MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="d-flex justify-center align-center flex-grow-1" Style="width: 100%;">
+        <div style="width: 100%; padding: 24px 8px;">
+            @Body
+        </div>
+    </MudContainer>
+
+    <MudText Typo="Typo.caption" Align="Align.Center" Color="Color.Secondary" Class="pb-4" Style="opacity: 0.7;">
+        @AppConfiguration.VariantDisplayName
+    </MudText>
+</div>
+
+@code {
+    private void ToggleTheme()
+    {
+        ThemeState.IsDarkMode = !ThemeState.IsDarkMode;
+    }
+
+    private async Task MostrarInfoAsync()
+    {
+        await DialogService.ShowAsync<AppInfoDialog>("Información de la aplicación");
+    }
+}

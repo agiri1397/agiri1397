@@ -1,0 +1,26 @@
+@page "/inicio"
+@attribute [Authorize]
+@inject IAuthService AuthService
+
+<MudText Typo="Typo.h4" Class="mb-1">Inicio</MudText>
+<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">
+    @if (_nombre is not null)
+    {
+        <text>Hola, @_nombre.</text>
+    }
+</MudText>
+
+<MudAlert Severity="Severity.Info">
+    Los módulos de la aplicación todavía no están definidos. Esta pantalla es el punto de partida
+    una vez agregados.
+</MudAlert>
+
+@code {
+    private string? _nombre;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var sesion = await AuthService.GetCurrentSessionAsync();
+        _nombre = sesion?.Nombre;
+    }
+}
