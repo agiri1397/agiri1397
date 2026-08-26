@@ -3,6 +3,7 @@ using SistemaILP.Ruteo.Application.DTOs;
 using SistemaILP.Ruteo.Application.Interfaces;
 using SistemaILP.Ruteo.Application.Services;
 using SistemaILP.Ruteo.Domain.Entities;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace SistemaILP.Ruteo.Application.Tests;
@@ -21,7 +22,7 @@ public class AuthServiceTests
                 Configuracion = new ConfiguracionDto { CodigoVendedor = "V001", NombreVendedor = "Alice" }
             }
         };
-        var sut = new AuthService(wsClient, repo, new NoOpAuthStateNotifier());
+        var sut = new AuthService(wsClient, repo, new NoOpAuthStateNotifier(), NullLogger<AuthService>.Instance);
 
         var result = await sut.LoginAsync(new LoginCredentialsDto { Usuario = "alice", Password = "secret" });
 
@@ -42,7 +43,7 @@ public class AuthServiceTests
         {
             Response = new WsLoginResultDto { Resultado = 0, Mensaje = "Usuario o contraseña incorrectos" }
         };
-        var sut = new AuthService(wsClient, repo, new NoOpAuthStateNotifier());
+        var sut = new AuthService(wsClient, repo, new NoOpAuthStateNotifier(), NullLogger<AuthService>.Instance);
 
         var result = await sut.LoginAsync(new LoginCredentialsDto { Usuario = "bob", Password = "wrong" });
 
@@ -74,7 +75,7 @@ public class AuthServiceTests
                 Configuracion = new ConfiguracionDto { CodigoVendedor = "V999", NombreVendedor = "Carol Actualizada" }
             }
         };
-        var sut = new AuthService(wsClient, repo, new NoOpAuthStateNotifier());
+        var sut = new AuthService(wsClient, repo, new NoOpAuthStateNotifier(), NullLogger<AuthService>.Instance);
 
         var result = await sut.LoginAsync(new LoginCredentialsDto { Usuario = "carol", Password = "lo-que-tipeo" });
 
@@ -101,7 +102,7 @@ public class AuthServiceTests
             SesionActiva = true
         });
 
-        var sut = new AuthService(new FakeLoginWebServiceClient(), repo, new NoOpAuthStateNotifier());
+        var sut = new AuthService(new FakeLoginWebServiceClient(), repo, new NoOpAuthStateNotifier(), NullLogger<AuthService>.Instance);
 
         var result = await sut.LogoutAsync();
 

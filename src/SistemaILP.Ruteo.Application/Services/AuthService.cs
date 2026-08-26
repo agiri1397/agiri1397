@@ -2,6 +2,7 @@ using SistemaILP.Ruteo.Application.Common;
 using SistemaILP.Ruteo.Application.DTOs;
 using SistemaILP.Ruteo.Application.Interfaces;
 using SistemaILP.Ruteo.Domain.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace SistemaILP.Ruteo.Application.Services;
 
@@ -24,22 +25,26 @@ public class AuthService : IAuthService
     private readonly ILoginWebServiceClient _loginWebServiceClient;
     private readonly IUsuarioRepository _usuarioRepository;
     private readonly IAuthStateNotifier _authStateNotifier;
+    private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         ILoginWebServiceClient loginWebServiceClient,
         IUsuarioRepository usuarioRepository,
-        IAuthStateNotifier authStateNotifier)
+        IAuthStateNotifier authStateNotifier,
+        ILogger<AuthService> logger)
     {
         _loginWebServiceClient = loginWebServiceClient;
         _usuarioRepository = usuarioRepository;
         _authStateNotifier = authStateNotifier;
+        _logger = logger;
     }
 
     public async Task<Result<SesionUsuarioDto>> LoginAsync(LoginCredentialsDto credentials)
     {
         if (string.IsNullOrWhiteSpace(credentials.Usuario) || string.IsNullOrWhiteSpace(credentials.Password))
         {
-            return Result<SesionUsuarioDto>.Failure("Usuario y contraseña son obligatorios.");
+            return Result<SesionUsuarioDto>.Failure(
+                MessageTexts.Login.RequiredFieldsMessage, MessageTexts.Login.RequiredFieldsTitle);
         }
 
         var wsRequest = new WsLoginRequestDto
@@ -52,23 +57,30 @@ public class AuthService : IAuthService
         var wsResult = await _loginWebServiceClient.LoginAsync(wsRequest);
         if (!wsResult.Succeeded)
         {
-            return Result<SesionUsuarioDto>.Failure(wsResult.Error!);
+            return Result<SesionUsuarioDto>.Failure(wsResult.Error!, wsResult.ErrorTitle, wsResult.MessageType);
         }
 
         var response = wsResult.Data!;
 
         // Igual que Android: el exito lo determina "resultado", no el
-        // status HTTP (ver WsResultDTO.SUCCESSFULL_LOGIN = 1).
+        // status HTTP (ver WsResultDTO.SUCCESSFULL_LOGIN = 1). El WS no
+        // distingue si fallo el usuario o la contraseña, asi que el
+        // mensaje se mantiene generico salvo que el propio servidor mande
+        // uno especifico en "mensaje" (ver seccion 11 del pedido).
         if (response.Resultado != 1)
         {
-            return Result<SesionUsuarioDto>.Failure(
-                string.IsNullOrWhiteSpace(response.Mensaje) ? "Usuario o contraseña incorrectos." : response.Mensaje);
+            var message = string.IsNullOrWhiteSpace(response.Mensaje)
+                ? MessageTexts.Login.InvalidCredentialsMessage
+                : response.Mensaje;
+
+            return Result<SesionUsuarioDto>.Failure(message, MessageTexts.Login.InvalidCredentialsTitle);
         }
 
         var configuracion = response.Configuracion;
         if (configuracion is null)
         {
-            return Result<SesionUsuarioDto>.Failure("El servidor no devolvió una respuesta válida.");
+            return Result<SesionUsuarioDto>.Failure(
+                MessageTexts.Login.InvalidServerResponseMessage, MessageTexts.Login.InvalidServerResponseTitle);
         }
 
         await GuardarSesionAsync(wsRequest.Usuario, credentials.Password, configuracion);
@@ -126,7 +138,8 @@ public class AuthService : IAuthService
         }
         catch (Exception ex)
         {
-            return Result.Failure($"No se pudo cerrar la sesión correctamente: {ex.Message}");
+            _logger.LogError(ex, "Error al eliminar la sesion activa durante logout.");
+            return Result.Failure(MessageTexts.Login.LogoutErrorMessage, MessageTexts.Login.LogoutErrorTitle);
         }
 
         _authStateNotifier.NotifyAuthenticationStateChanged();

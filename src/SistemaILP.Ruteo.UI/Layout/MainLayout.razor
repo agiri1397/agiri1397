@@ -2,7 +2,7 @@
 @implements IDisposable
 @inject NavigationManager NavigationManager
 @inject IAuthService AuthService
-@inject ISnackbar Snackbar
+@inject IMessageService MessageService
 
 <MudLayout>
     <MudAppBar Elevation="1">
@@ -85,7 +85,7 @@
             // BD, la sesion sigue existiendo (se volveria a recuperar al
             // reabrir la app), asi que NO navegamos al Login todavia -
             // se deja al usuario reintentar.
-            Snackbar.Add(result.Error, Severity.Error);
+            MessageService.ShowError(result.Error!, result.ErrorTitle);
             return;
         }
 

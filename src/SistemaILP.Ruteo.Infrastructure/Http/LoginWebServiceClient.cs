@@ -43,14 +43,15 @@ public class LoginWebServiceClient : ILoginWebServiceClient
                 _logger.LogWarning(
                     "validarUsuario respondio con status {StatusCode}", response.StatusCode);
                 return Result<WsLoginResultDto>.Failure(
-                    "No fue posible completar el inicio de sesión. Inténtelo nuevamente.");
+                    MessageTexts.Login.ServerUnavailableMessage, MessageTexts.Login.ServerUnavailableTitle);
             }
 
             var result = await response.Content.ReadFromJsonAsync<WsLoginResultDto>(cancellationToken: cancellationToken);
             if (result is null)
             {
                 _logger.LogWarning("validarUsuario devolvio un cuerpo vacio o no interpretable.");
-                return Result<WsLoginResultDto>.Failure("El servidor no devolvió una respuesta válida.");
+                return Result<WsLoginResultDto>.Failure(
+                    MessageTexts.Login.InvalidServerResponseMessage, MessageTexts.Login.InvalidServerResponseTitle);
             }
 
             return Result<WsLoginResultDto>.Success(result);
@@ -59,29 +60,31 @@ public class LoginWebServiceClient : ILoginWebServiceClient
         {
             _logger.LogError(ex, "Base URL configurada invalida.");
             return Result<WsLoginResultDto>.Failure(
-                "La dirección del servidor configurada no es válida. Revísela en Configuración.");
+                MessageTexts.Login.InvalidBaseUrlMessage, MessageTexts.Login.InvalidBaseUrlTitle);
         }
         catch (JsonException ex)
         {
             _logger.LogError(ex, "Respuesta invalida de validarUsuario.");
-            return Result<WsLoginResultDto>.Failure("Se recibió una respuesta inválida del servidor.");
+            return Result<WsLoginResultDto>.Failure(
+                MessageTexts.Login.InvalidResponseMessage, MessageTexts.Login.InvalidResponseTitle);
         }
         catch (TaskCanceledException ex)
         {
             _logger.LogError(ex, "Timeout llamando a validarUsuario.");
             return Result<WsLoginResultDto>.Failure(
-                "El servidor tardó demasiado en responder. Inténtelo nuevamente.");
+                MessageTexts.Login.TimeoutMessage, MessageTexts.Login.TimeoutTitle);
         }
         catch (HttpRequestException ex)
         {
             _logger.LogError(ex, "Error de conexion llamando a validarUsuario.");
             return Result<WsLoginResultDto>.Failure(
-                "No fue posible conectarse con el servidor. Verifique su conexión e inténtelo nuevamente.");
+                MessageTexts.Login.ConnectionErrorMessage, MessageTexts.Login.ConnectionErrorTitle);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error inesperado llamando a validarUsuario.");
-            return Result<WsLoginResultDto>.Failure("Ocurrió un error inesperado. Inténtelo nuevamente.");
+            return Result<WsLoginResultDto>.Failure(
+                MessageTexts.Login.UnexpectedErrorMessage, MessageTexts.Login.UnexpectedErrorTitle);
         }
     }
 }

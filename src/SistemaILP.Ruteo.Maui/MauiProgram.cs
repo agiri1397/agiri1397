@@ -5,6 +5,7 @@ using SistemaILP.Ruteo.Infrastructure;
 using SistemaILP.Ruteo.Maui.Services;
 using SistemaILP.Ruteo.Application.Interfaces;
 using SistemaILP.Ruteo.UI.Services;
+using SistemaILP.Ruteo.UI.Components.Messages;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -31,6 +32,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IPreferencesService, MauiPreferencesService>();
         builder.Services.AddSingleton<ThemeState>();
         builder.Services.AddSingleton<DatabaseStartupState>();
+        builder.Services.AddScoped<IMessageService, MessageService>();
 
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
