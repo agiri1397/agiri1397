@@ -3,7 +3,6 @@
 @inject ThemeState ThemeState
 @inject IConnectionSettingsService ConnectionSettings
 @inject IPreferencesService PreferencesService
-@inject AppConfiguration AppConfiguration
 @inject IDialogService DialogService
 
 <MudText Typo="Typo.h4" Class="mb-6">Configuración</MudText>
@@ -45,27 +44,10 @@
 
 <MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="mb-2">Acerca de</MudText>
 <MudPaper Class="pa-4">
-    <MudStack Spacing="3">
-        <div>
-            <MudText Typo="Typo.body1">Desarrollador</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">@AppConfiguration.About.Developer</MudText>
-        </div>
-        <MudDivider />
-        <div>
-            <MudText Typo="Typo.body1">Email de soporte</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">@AppConfiguration.About.SupportEmail</MudText>
-        </div>
-        <MudDivider />
-        <div>
-            <MudText Typo="Typo.body1">Teléfono de soporte</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">@AppConfiguration.About.SupportPhone</MudText>
-        </div>
-        <MudDivider />
-        <div>
-            <MudText Typo="Typo.body1">Versión</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">@AppConfiguration.DisplayVersion &nbsp;·&nbsp; Build @AppConfiguration.BuildNumber</MudText>
-        </div>
-    </MudStack>
+    <div class="d-flex align-center justify-space-between" style="gap: 12px; cursor: pointer;" @onclick="MostrarInfoAsync">
+        <MudText Typo="Typo.body1">Información de la aplicación</MudText>
+        <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Color="Color.Secondary" />
+    </div>
 </MudPaper>
 
 @code {
@@ -103,5 +85,10 @@
         {
             _baseUrl = await ConnectionSettings.GetBaseUrlAsync();
         }
+    }
+
+    private async Task MostrarInfoAsync()
+    {
+        await DialogService.ShowAsync<AppInfoDialog>("Información de la aplicación");
     }
 }

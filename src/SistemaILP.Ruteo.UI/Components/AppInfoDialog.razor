@@ -8,6 +8,12 @@
             <MudText Typo="Typo.body2"><b>Versión:</b>&nbsp;@AppConfiguration.DisplayVersion</MudText>
             <MudText Typo="Typo.body2"><b>Build:</b>&nbsp;@AppConfiguration.BuildNumber</MudText>
         </MudStack>
+        <MudDivider Class="my-3" />
+        <MudStack Spacing="1">
+            <MudText Typo="Typo.body2"><b>Desarrollador:</b>&nbsp;@AppConfiguration.About.Developer</MudText>
+            <MudText Typo="Typo.body2"><b>Email de soporte:</b>&nbsp;@AppConfiguration.About.SupportEmail</MudText>
+            <MudText Typo="Typo.body2"><b>Teléfono de soporte:</b>&nbsp;@AppConfiguration.About.SupportPhone</MudText>
+        </MudStack>
     </DialogContent>
     <DialogActions>
         <MudButton Color="Color.Primary" OnClick="Close">Cerrar</MudButton>
