@@ -109,6 +109,12 @@ public static class MauiProgram
             {
                 DatabaseName = databaseName,
                 FullPath = databasePath
+            },
+            About = new AppInfoConfiguration
+            {
+                Developer = "ILP",
+                SupportEmail = "sop-app@ilpsa.com",
+                SupportPhone = "+502 2420 0323"
             }
         };
     }

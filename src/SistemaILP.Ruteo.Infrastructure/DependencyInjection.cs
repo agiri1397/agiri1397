@@ -33,9 +33,11 @@ public static class DependencyInjection
         services.AddScoped<IAuthStateNotifier>(sp =>
             sp.GetRequiredService<CustomAuthenticationStateProvider>());
 
+        // Sin BaseAddress fija: LoginWebServiceClient resuelve la Base URL
+        // en cada llamada via IConnectionSettingsService, porque el
+        // usuario puede cambiarla desde Configuracion sin reiniciar la app.
         services.AddHttpClient<ILoginWebServiceClient, LoginWebServiceClient>(client =>
         {
-            client.BaseAddress = new Uri(configuration.WebService.BaseUrl);
             client.Timeout = TimeSpan.FromSeconds(30);
         });
 

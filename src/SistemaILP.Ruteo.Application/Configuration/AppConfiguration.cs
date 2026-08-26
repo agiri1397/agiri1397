@@ -22,6 +22,8 @@ public class AppConfiguration
 
     public required DatabaseConfiguration Database { get; init; }
 
+    public required AppInfoConfiguration About { get; init; }
+
     public string VariantDisplayName => Variant switch
     {
         AppVariant.Preventa => "Preventa",
