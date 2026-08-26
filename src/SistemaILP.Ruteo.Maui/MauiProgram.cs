@@ -99,9 +99,11 @@ public static class MauiProgram
             BuildNumber = AppInfo.Current.BuildString,
             WebService = new WebServiceConfiguration
             {
-                // TODO: reemplazar por la Base URL real (Preventa/Autoventa/
-                // Despachos comparten la misma por ahora). Debe terminar en "/".
-                BaseUrl = "https://pendiente-configurar-base-url.example/api/"
+                // Base URL de pruebas (Preventa/Autoventa/Despachos comparten
+                // la misma por ahora). Cuando exista la de producción, hay
+                // que decidir cómo distinguir Debug/Release u otra estrategia
+                // - por ahora es única para toda la app.
+                BaseUrl = "https://pruebas.ilpsa.com:8088/WS/Preventaapigtpruebas/apigt/appmovil/"
             },
             Database = new DatabaseConfiguration
             {
